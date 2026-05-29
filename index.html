@@ -101,17 +101,31 @@
         </div>
       </section>
 
-      <!-- Projects & Meetings Section -->
-      <section class="card card-projects" aria-label="Projects and Meetings">
+      <!-- Projects Section -->
+      <section class="card card-projects" aria-label="Projects">
         <div class="card-header">
-          <h2 class="card-heading">Projects & Meetings</h2>
-          <button class="btn btn-primary btn-sm" id="btnAddProject" aria-label="Add project or meeting">
+          <h2 class="card-heading">Projects</h2>
+          <button class="btn btn-primary btn-sm" id="btnAddProject" aria-label="Add project">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add
           </button>
         </div>
         <div id="projectsList" class="items-list">
-          <p class="empty-state">No projects or meetings yet. Add one to get started.</p>
+          <p class="empty-state">No projects yet. Add one to get started.</p>
+        </div>
+      </section>
+
+      <!-- Meetings Section -->
+      <section class="card card-meetings" aria-label="Meetings">
+        <div class="card-header">
+          <h2 class="card-heading">Meetings</h2>
+          <button class="btn btn-primary btn-sm" id="btnAddMeeting" aria-label="Add meeting">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add
+          </button>
+        </div>
+        <div id="meetingsList" class="items-list">
+          <p class="empty-state">No meetings yet. Add one to get started.</p>
         </div>
       </section>
     </div>
@@ -150,39 +164,23 @@
     </form>
   </dialog>
 
-  <!-- Project/Meeting Modal -->
+  <!-- Project Modal -->
   <dialog class="modal" id="projectModal">
     <form class="modal-form" id="projectForm" method="dialog">
-      <h2 class="modal-title" id="projectModalTitle">Add Project / Meeting</h2>
-      <div class="form-group">
-        <label for="projectType">Type <span class="required">*</span></label>
-        <select id="projectType" required>
-          <option value="project">Project</option>
-          <option value="meeting">Meeting</option>
-        </select>
-      </div>
+      <h2 class="modal-title" id="projectModalTitle">Add Project</h2>
       <div class="form-group">
         <label for="projectTitle">Title <span class="required">*</span></label>
         <input type="text" id="projectTitle" required maxlength="120" autocomplete="off">
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label for="projectDate">Date <span class="required">*</span></label>
-          <input type="date" id="projectDate" required>
+          <label for="projectStartDate">Start Date <span class="required">*</span></label>
+          <input type="date" id="projectStartDate" required>
         </div>
         <div class="form-group">
-          <label for="projectTime">Time</label>
-          <input type="time" id="projectTime">
+          <label for="projectEndDate">End Date</label>
+          <input type="date" id="projectEndDate">
         </div>
-      </div>
-      <div class="form-group">
-        <label for="projectStatus">Status</label>
-        <select id="projectStatus">
-          <option value="upcoming">Upcoming</option>
-          <option value="in-progress">In Progress</option>
-          <option value="completed">Completed</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
       </div>
       <div class="form-group">
         <label for="projectDesc">Description</label>
@@ -190,6 +188,35 @@
       </div>
       <div class="modal-actions">
         <button type="button" class="btn btn-ghost" id="projectCancel">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Meeting Modal -->
+  <dialog class="modal" id="meetingModal">
+    <form class="modal-form" id="meetingForm" method="dialog">
+      <h2 class="modal-title" id="meetingModalTitle">Add Meeting</h2>
+      <div class="form-group">
+        <label for="meetingTitle">Title <span class="required">*</span></label>
+        <input type="text" id="meetingTitle" required maxlength="120" autocomplete="off">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="meetingDate">Meeting Date <span class="required">*</span></label>
+          <input type="date" id="meetingDate" required>
+        </div>
+        <div class="form-group">
+          <label for="meetingTime">Start Time</label>
+          <input type="time" id="meetingTime">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="meetingDesc">Description</label>
+        <textarea id="meetingDesc" rows="2" maxlength="300"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="meetingCancel">Cancel</button>
         <button type="submit" class="btn btn-primary">Save</button>
       </div>
     </form>
