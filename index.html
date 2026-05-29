@@ -4,12 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Timekeeper</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <header class="app-header">
     <div class="header-left">
-      <svg class="logo-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <svg class="logo-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       <h1 class="app-title">TIMEKEEPER</h1>
     </div>
     <div class="header-right">
@@ -20,54 +23,56 @@
   </header>
 
   <main class="dashboard">
-    <!-- Command Bar: Timer -->
-    <section class="card card-timer" aria-label="Work Timer">
-      <div class="timer-top">
-        <div class="timer-left">
-          <h2 class="card-heading">TIMER</h2>
-          <div class="timer-input-row">
-            <label for="timerTask" class="sr-only">Task name</label>
-            <input type="text" id="timerTask" class="timer-input" placeholder="What are you working on?" maxlength="120" autocomplete="off">
-          </div>
-        </div>
-        <div class="timer-right">
-          <span class="timer-display" id="timerDisplay">0:00:00</span>
-          <div class="timer-controls">
-            <button class="btn btn-primary" id="btnStart" aria-label="Start timer">Start</button>
-            <button class="btn btn-secondary" id="btnPause" disabled aria-label="Pause timer">Pause</button>
-            <button class="btn btn-secondary" id="btnResume" disabled aria-label="Resume timer">Resume</button>
-            <button class="btn btn-danger" id="btnStop" disabled aria-label="Stop timer">Stop</button>
-            <button class="btn btn-ghost" id="btnReset" disabled aria-label="Reset timer">Reset</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Metric Cards -->
+    <!-- Overview Cards -->
     <section class="overview-row">
-      <div class="card card-metric">
-        <span class="metric-label">Today</span>
-        <span class="metric-value" id="todayDate"></span>
+      <div class="card card-overview">
+        <span class="card-label">Today</span>
+        <span class="card-value" id="todayDate"></span>
       </div>
-      <div class="card card-metric">
-        <span class="metric-label">Work Today</span>
-        <span class="metric-value metric-value--lg" id="todayTotal">0h 0m</span>
+      <div class="card card-overview">
+        <span class="card-label">Work Today</span>
+        <span class="card-value card-value--accent" id="todayTotal">0h 0m</span>
       </div>
-      <div class="card card-metric">
-        <span class="metric-label">Work This Week</span>
-        <span class="metric-value metric-value--lg" id="weekTotal">0h 0m</span>
+      <div class="card card-overview">
+        <span class="card-label">Work This Week</span>
+        <span class="card-value card-value--accent" id="weekTotal">0h 0m</span>
       </div>
-      <div class="card card-metric">
-        <span class="metric-label">Next Up</span>
-        <span class="metric-value" id="nextUp">Nothing scheduled</span>
+      <div class="card card-overview">
+        <span class="card-label">Next Up</span>
+        <span class="card-value card-value--small" id="nextUp">Nothing scheduled</span>
       </div>
     </section>
 
     <div class="dashboard-grid">
+      <!-- Timer Section -->
+      <section class="card card-timer" aria-label="Work Timer">
+        <div class="card-header">
+          <h2 class="card-heading">Timer</h2>
+          <span class="timer-display" id="timerDisplay">0:00:00</span>
+        </div>
+        <div class="timer-input-row">
+          <label for="timerTask" class="sr-only">Task name</label>
+          <input type="text" id="timerTask" class="timer-input" placeholder="What are you working on?" maxlength="120" autocomplete="off">
+        </div>
+        <div class="timer-controls">
+          <button class="btn btn-primary" id="btnStart" aria-label="Start timer">Start</button>
+          <button class="btn btn-secondary" id="btnPause" disabled aria-label="Pause timer">Pause</button>
+          <button class="btn btn-secondary" id="btnResume" disabled aria-label="Resume timer">Resume</button>
+          <button class="btn btn-danger" id="btnStop" disabled aria-label="Stop timer">Stop</button>
+          <button class="btn btn-ghost" id="btnReset" disabled aria-label="Reset timer">Reset</button>
+        </div>
+        <div class="sessions-section">
+          <h3 class="sub-heading">Recent Sessions</h3>
+          <div id="sessionsList" class="sessions-list">
+            <p class="empty-state">No work sessions yet. Start the timer to begin tracking.</p>
+          </div>
+        </div>
+      </section>
+
       <!-- Calendar Section -->
       <section class="card card-calendar" aria-label="Calendar">
         <div class="card-header">
-          <h2 class="card-heading">CALENDAR</h2>
+          <h2 class="card-heading">Calendar</h2>
           <div class="calendar-nav">
             <button class="btn btn-icon" id="calPrev" aria-label="Previous month">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
@@ -82,20 +87,10 @@
         <div class="calendar-day-items" id="calendarDayItems"></div>
       </section>
 
-      <!-- Sessions -->
-      <section class="card card-sessions" aria-label="Recent Sessions">
-        <div class="card-header">
-          <h2 class="card-heading">RECENT SESSIONS</h2>
-        </div>
-        <div id="sessionsList" class="sessions-list">
-          <p class="empty-state">No work sessions yet. Start the timer to begin tracking.</p>
-        </div>
-      </section>
-
       <!-- Events Section -->
       <section class="card card-events" aria-label="Upcoming Events">
         <div class="card-header">
-          <h2 class="card-heading">UPCOMING EVENTS</h2>
+          <h2 class="card-heading">Upcoming Events</h2>
           <button class="btn btn-primary btn-sm" id="btnAddEvent" aria-label="Add event">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add
@@ -109,7 +104,7 @@
       <!-- Projects & Meetings Section -->
       <section class="card card-projects" aria-label="Projects and Meetings">
         <div class="card-header">
-          <h2 class="card-heading">PROJECTS & MEETINGS</h2>
+          <h2 class="card-heading">Projects & Meetings</h2>
           <button class="btn btn-primary btn-sm" id="btnAddProject" aria-label="Add project or meeting">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add
