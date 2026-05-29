@@ -162,9 +162,8 @@ body::after {
 
 .card-timer { grid-column: 1; }
 .card-calendar { grid-column: 2 / 4; }
-.card-events { grid-column: 1; }
-.card-projects { grid-column: 2; }
-.card-meetings { grid-column: 3; }
+.card-projects .item-card { flex-direction: column; gap: 8px; }
+.card-projects .item-actions { align-self: flex-end; }
 
 /* ===== Timer ===== */
 .timer-display {
@@ -591,9 +590,7 @@ body::after {
   .dashboard-grid { grid-template-columns: 1fr 1fr; }
   .card-timer { grid-column: 1; }
   .card-calendar { grid-column: 2; }
-  .card-events { grid-column: 1; }
-  .card-projects { grid-column: 2; }
-  .card-meetings { grid-column: 1 / 3; }
+  .card-projects .item-card { flex-direction: row; gap: 12px; }
 }
 
 @media (max-width: 560px) {
@@ -609,7 +606,8 @@ body::after {
   .cal-day { padding: 6px 2px; font-size: 0.76rem; }
   .form-row { grid-template-columns: 1fr; }
   .dashboard-grid { grid-template-columns: 1fr; }
-  .card-timer, .card-calendar, .card-events, .card-projects, .card-meetings { grid-column: 1; }
+  .card-timer, .card-calendar, .card-events, .card-meetings, .card-projects { grid-column: 1; }
+  .card-projects .item-card { flex-direction: row; gap: 12px; }
 }
 
 @media (max-width: 380px) {
