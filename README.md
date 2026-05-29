@@ -1,6 +1,6 @@
 # Timekeeper Dashboard
 
-A modern, Apple-inspired static dashboard for tracking work time, upcoming events, projects, and meetings. Runs entirely client-side with localStorage persistence. Deployable on GitHub Pages.
+A dark, futuristic productivity dashboard for tracking work time, upcoming events, projects, and meetings. Runs entirely client-side with localStorage persistence. Deployable on GitHub Pages.
 
 ## Features
 
@@ -11,7 +11,7 @@ A modern, Apple-inspired static dashboard for tracking work time, upcoming event
 - **Projects & meetings** with type badges, status labels, overdue detection — add/edit/delete
 - **Monthly calendar** with dot markers for days that have items, click-to-filter
 - **Responsive layout** for desktop, tablet, and mobile
-- **Apple-inspired design** with glassy panels, soft shadows, rounded corners, and smooth transitions
+- **Dark futuristic design** with neon lime accents, glowing panels, bold uppercase labels, and layered depth
 - **All data persisted in localStorage** — no backend, no auth, no API keys
 
 ## Run Locally
