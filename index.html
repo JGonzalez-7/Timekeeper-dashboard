@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Timekeeper</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-left">
+      <svg class="logo-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <h1 class="app-title">Timekeeper</h1>
+    </div>
+    <div class="header-right">
+      <span class="header-date" id="headerDate"></span>
+      <span class="header-clock" id="headerClock"></span>
+    </div>
+  </header>
+
+  <main class="dashboard">
+    <!-- Overview Cards -->
+    <section class="overview-row">
+      <div class="card card-overview">
+        <span class="card-label">Today</span>
+        <span class="card-value" id="todayDate"></span>
+      </div>
+      <div class="card card-overview">
+        <span class="card-label">Work Today</span>
+        <span class="card-value" id="todayTotal">0h 0m</span>
+      </div>
+      <div class="card card-overview">
+        <span class="card-label">Work This Week</span>
+        <span class="card-value" id="weekTotal">0h 0m</span>
+      </div>
+      <div class="card card-overview">
+        <span class="card-label">Next Up</span>
+        <span class="card-value card-value--small" id="nextUp">Nothing scheduled</span>
+      </div>
+    </section>
+
+    <div class="dashboard-grid">
+      <!-- Timer Section -->
+      <section class="card card-timer" aria-label="Work Timer">
+        <div class="card-header">
+          <h2 class="card-heading">Work Timer</h2>
+          <span class="timer-display" id="timerDisplay">0:00:00</span>
+        </div>
+        <div class="timer-input-row">
+          <label for="timerTask" class="sr-only">Task name</label>
+          <input type="text" id="timerTask" class="timer-input" placeholder="What are you working on?" maxlength="120" autocomplete="off">
+        </div>
+        <div class="timer-controls">
+          <button class="btn btn-primary" id="btnStart" aria-label="Start timer">Start</button>
+          <button class="btn btn-secondary" id="btnPause" disabled aria-label="Pause timer">Pause</button>
+          <button class="btn btn-secondary" id="btnResume" disabled aria-label="Resume timer">Resume</button>
+          <button class="btn btn-danger" id="btnStop" disabled aria-label="Stop timer">Stop</button>
+          <button class="btn btn-ghost" id="btnReset" disabled aria-label="Reset timer">Reset</button>
+        </div>
+        <div class="sessions-section">
+          <h3 class="sub-heading">Recent Sessions</h3>
+          <div id="sessionsList" class="sessions-list">
+            <p class="empty-state">No work sessions yet. Start the timer to begin tracking.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Calendar Section -->
+      <section class="card card-calendar" aria-label="Calendar">
+        <div class="card-header">
+          <h2 class="card-heading">Calendar</h2>
+          <div class="calendar-nav">
+            <button class="btn btn-icon" id="calPrev" aria-label="Previous month">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <span class="calendar-month-label" id="calMonthLabel"></span>
+            <button class="btn btn-icon" id="calNext" aria-label="Next month">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+        <div class="calendar-day-items" id="calendarDayItems"></div>
+      </section>
+
+      <!-- Events Section -->
+      <section class="card card-events" aria-label="Upcoming Events">
+        <div class="card-header">
+          <h2 class="card-heading">Upcoming Events</h2>
+          <button class="btn btn-primary btn-sm" id="btnAddEvent" aria-label="Add event">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add
+          </button>
+        </div>
+        <div id="eventsList" class="items-list">
+          <p class="empty-state">No upcoming events. Add one to get started.</p>
+        </div>
+      </section>
+
+      <!-- Projects & Meetings Section -->
+      <section class="card card-projects" aria-label="Projects and Meetings">
+        <div class="card-header">
+          <h2 class="card-heading">Projects & Meetings</h2>
+          <button class="btn btn-primary btn-sm" id="btnAddProject" aria-label="Add project or meeting">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add
+          </button>
+        </div>
+        <div id="projectsList" class="items-list">
+          <p class="empty-state">No projects or meetings yet. Add one to get started.</p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Event Modal -->
+  <dialog class="modal" id="eventModal">
+    <form class="modal-form" id="eventForm" method="dialog">
+      <h2 class="modal-title" id="eventModalTitle">Add Event</h2>
+      <div class="form-group">
+        <label for="eventTitle">Title <span class="required">*</span></label>
+        <input type="text" id="eventTitle" required maxlength="120" autocomplete="off">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="eventDate">Date <span class="required">*</span></label>
+          <input type="date" id="eventDate" required>
+        </div>
+        <div class="form-group">
+          <label for="eventTime">Time</label>
+          <input type="time" id="eventTime">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="eventLocation">Location</label>
+        <input type="text" id="eventLocation" maxlength="120" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label for="eventNotes">Notes</label>
+        <textarea id="eventNotes" rows="2" maxlength="300"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="eventCancel">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Project/Meeting Modal -->
+  <dialog class="modal" id="projectModal">
+    <form class="modal-form" id="projectForm" method="dialog">
+      <h2 class="modal-title" id="projectModalTitle">Add Project / Meeting</h2>
+      <div class="form-group">
+        <label for="projectType">Type <span class="required">*</span></label>
+        <select id="projectType" required>
+          <option value="project">Project</option>
+          <option value="meeting">Meeting</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="projectTitle">Title <span class="required">*</span></label>
+        <input type="text" id="projectTitle" required maxlength="120" autocomplete="off">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="projectDate">Date <span class="required">*</span></label>
+          <input type="date" id="projectDate" required>
+        </div>
+        <div class="form-group">
+          <label for="projectTime">Time</label>
+          <input type="time" id="projectTime">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="projectStatus">Status</label>
+        <select id="projectStatus">
+          <option value="upcoming">Upcoming</option>
+          <option value="in-progress">In Progress</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="projectDesc">Description</label>
+        <textarea id="projectDesc" rows="2" maxlength="300"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="projectCancel">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
