@@ -162,11 +162,11 @@ body::after {
 
 .card-timer { grid-column: 1; }
 .card-calendar { grid-column: 2 / 4; }
-.card-projects .item-card { flex-direction: column; gap: 8px; padding: 10px; }
-.card-projects .item-left { flex: none; }
-.card-projects .item-title { white-space: normal; overflow: visible; text-overflow: unset; font-size: 0.82rem; }
-.card-projects .item-sub { white-space: normal; overflow: visible; text-overflow: unset; }
-.card-projects .item-actions { align-self: flex-end; }
+.card-projects .item-card { padding: 10px; }
+.card-projects .item-title { font-size: 0.82rem; }
+.card-projects .item-sub { font-size: 0.7rem; }
+.card-projects .item-badges { gap: 4px; }
+.card-projects .badge { font-size: 0.58rem; padding: 1px 6px; }
 
 /* ===== Timer ===== */
 .timer-display {
