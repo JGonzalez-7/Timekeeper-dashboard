@@ -162,7 +162,10 @@ body::after {
 
 .card-timer { grid-column: 1; }
 .card-calendar { grid-column: 2 / 4; }
-.card-projects .item-card { flex-direction: column; gap: 8px; }
+.card-projects .item-card { flex-direction: column; gap: 8px; padding: 10px; }
+.card-projects .item-left { flex: none; }
+.card-projects .item-title { white-space: normal; overflow: visible; text-overflow: unset; font-size: 0.82rem; }
+.card-projects .item-sub { white-space: normal; overflow: visible; text-overflow: unset; }
 .card-projects .item-actions { align-self: flex-end; }
 
 /* ===== Timer ===== */
