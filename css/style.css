@@ -163,8 +163,22 @@ body::after {
 .card-timer { grid-column: 1; }
 .card-calendar { grid-column: 2 / 4; }
 .card-projects .item-card { padding: 10px; }
-.card-projects .item-title { font-size: 0.82rem; }
-.card-projects .item-sub { font-size: 0.7rem; }
+.card-projects .item-title {
+  font-size: 0.82rem;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+}
+.card-projects .item-sub {
+  max-width: 72ch;
+  font-size: 0.7rem;
+  line-height: 1.35;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+}
 .card-projects .item-badges { gap: 4px; }
 .card-projects .badge { font-size: 0.58rem; padding: 1px 6px; }
 
