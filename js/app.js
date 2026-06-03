@@ -3,28 +3,70 @@
   'use strict';
 
   // ===== Storage =====
-  var KEYS = { sessions: 'tk_sessions', events: 'tk_events', projects: 'tk_projects', meetings: 'tk_meetings' };
+  var KEYS = { sessions: 'sessions', events: 'events', projects: 'projects', meetings: 'meetings' };
+  var LEGACY_KEYS = { sessions: 'tk_sessions', events: 'tk_events', projects: 'tk_projects', meetings: 'tk_meetings' };
+  var API_URL = '/api/data';
+  var store = { sessions: [], events: [], projects: [], meetings: [] };
+  var storageReady = false;
 
   function load(key) {
+    return store[key] || [];
+  }
+
+  function save(key, data) {
+    store[key] = Array.isArray(data) ? data : [];
+    if (storageReady) persist(key, store[key]).catch(function () {});
+  }
+
+  function persist(key, data) {
+    return fetch(API_URL + '/' + encodeURIComponent(key), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    }).then(function (res) {
+      if (!res.ok) throw new Error('Database save failed');
+      return res.json();
+    }).catch(function (err) {
+      showDatabaseWarning('Database save failed. Check your MongoDB connection.');
+      console.error(err);
+      throw err;
+    });
+  }
+
+  function legacyLoad(key) {
     try { return JSON.parse(localStorage.getItem(key)) || []; }
     catch (e) { return []; }
   }
 
-  function save(key, data) {
-    localStorage.setItem(key, JSON.stringify(data));
+  function clearLegacyStorage() {
+    Object.keys(LEGACY_KEYS).forEach(function (name) {
+      try { localStorage.removeItem(LEGACY_KEYS[name]); }
+      catch (e) {}
+    });
   }
 
-  // ===== Migration: split old combined projects/meetings into separate keys =====
-  (function migrate() {
-    // If meetings key exists already, migration already done
-    if (localStorage.getItem(KEYS.meetings) !== null) return;
-    var old = load(KEYS.projects);
-    if (!old.length) return;
-    var projects = [];
-    var meetings = [];
-    old.forEach(function (item) {
+  function legacyData() {
+    var data = {
+      sessions: legacyLoad(LEGACY_KEYS.sessions),
+      events: legacyLoad(LEGACY_KEYS.events),
+      projects: [],
+      meetings: []
+    };
+    var oldProjects = legacyLoad(LEGACY_KEYS.projects);
+    var hasSplitMeetings = false;
+
+    try { hasSplitMeetings = localStorage.getItem(LEGACY_KEYS.meetings) !== null; }
+    catch (e) { hasSplitMeetings = true; }
+
+    if (hasSplitMeetings) {
+      data.projects = oldProjects;
+      data.meetings = legacyLoad(LEGACY_KEYS.meetings);
+      return data;
+    }
+
+    oldProjects.forEach(function (item) {
       if (item.type === 'meeting') {
-        meetings.push({
+        data.meetings.push({
           id: item.id,
           title: item.title,
           date: item.date,
@@ -32,7 +74,7 @@
           description: item.description || item.desc || ''
         });
       } else {
-        projects.push({
+        data.projects.push({
           id: item.id,
           title: item.title,
           startDate: item.date || item.startDate || '',
@@ -41,9 +83,50 @@
         });
       }
     });
-    save(KEYS.projects, projects);
-    save(KEYS.meetings, meetings);
-  })();
+
+    return data;
+  }
+
+  function migrateLegacyStorage() {
+    var legacy = legacyData();
+    var writes = [];
+
+    Object.keys(KEYS).forEach(function (name) {
+      var key = KEYS[name];
+      if (!store[key].length && legacy[key].length) {
+        store[key] = legacy[key];
+        writes.push(persist(key, store[key]));
+      }
+    });
+
+    if (writes.length) Promise.all(writes).then(clearLegacyStorage).catch(function () {});
+  }
+
+  function initStorage() {
+    return fetch(API_URL).then(function (res) {
+      if (!res.ok) throw new Error('Database load failed');
+      return res.json();
+    }).then(function (data) {
+      Object.keys(KEYS).forEach(function (name) {
+        var key = KEYS[name];
+        store[key] = Array.isArray(data[key]) ? data[key] : [];
+      });
+      storageReady = true;
+      migrateLegacyStorage();
+    });
+  }
+
+  function showDatabaseWarning(message) {
+    var alert = $('#databaseAlert');
+    if (!alert) {
+      alert = document.createElement('div');
+      alert.id = 'databaseAlert';
+      alert.className = 'database-alert';
+      document.body.appendChild(alert);
+    }
+    alert.textContent = message;
+    alert.hidden = false;
+  }
 
   // ===== Helpers =====
   function $(sel) { return document.querySelector(sel); }
@@ -823,6 +906,16 @@
   });
 
   // ===== Init =====
+  function renderApp() {
+    renderSessions();
+    renderEvents();
+    renderProjects();
+    renderMeetings();
+    renderCalendar();
+    computeTotals();
+    computeNextUp();
+  }
+
   function init() {
     updateClock();
     updateDate();
@@ -830,14 +923,13 @@
     setInterval(updateDate, 60000);
 
     setTimerButtons('idle');
-    renderSessions();
-    renderEvents();
-    renderProjects();
-    renderMeetings();
     initCalendar();
-    renderCalendar();
-    computeTotals();
-    computeNextUp();
+
+    initStorage().then(renderApp).catch(function (err) {
+      showDatabaseWarning('Database unavailable. Run the Node server and check your MongoDB URI.');
+      console.error(err);
+      renderApp();
+    });
   }
 
   init();

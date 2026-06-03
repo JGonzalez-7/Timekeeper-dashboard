@@ -1,0 +1,16 @@
+# Local secrets and environment overrides
+.env
+.env.*
+.env.example
+
+# Dependencies and logs
+node_modules/
+npm-debug.log*
+
+# Private keys and certificates
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_ed25519

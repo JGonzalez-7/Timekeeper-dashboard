@@ -1,0 +1,13 @@
+{
+  "name": "timekeeper-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Timekeeper dashboard with MongoDB persistence.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "mongodb": "^6.0.0"
+  }
+}
