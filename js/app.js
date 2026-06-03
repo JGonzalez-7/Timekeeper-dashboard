@@ -1055,6 +1055,7 @@
     var container = $('#calendarDayItems');
 
     if (!calSelectedDate) {
+      container.classList.remove('calendar-day-items--scroll');
       container.innerHTML = '<p class="empty-state">Select a marked day to see items.</p>';
       return;
     }
@@ -1063,11 +1064,15 @@
     var evItems = eventOccurrencesBetween(load(KEYS.events), dateFilter, dateFilter);
     var projItems = load(KEYS.projects).filter(function (p) { return p.startDate === dateFilter || (p.endDate && p.endDate === dateFilter); });
     var meetItems = load(KEYS.meetings).filter(function (m) { return m.date === dateFilter; });
+    var totalItems = evItems.length + projItems.length + meetItems.length;
 
     if (!evItems.length && !projItems.length && !meetItems.length) {
+      container.classList.remove('calendar-day-items--scroll');
       container.innerHTML = '<p class="empty-state">No items on this date.</p>';
       return;
     }
+
+    container.classList.toggle('calendar-day-items--scroll', totalItems > 3);
 
     var html = '';
 
