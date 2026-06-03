@@ -52,6 +52,14 @@ function parseOrigins(value) {
   }).filter(Boolean));
 }
 
+function hasMongoPlaceholder(uri) {
+  return /<[^>]+>|YOUR_|your-|cluster-host|db_user|db_password|app_name/i.test(uri);
+}
+
+function isTlsHandshakeError(err) {
+  return /tlsv1 alert internal error|SSL routines|ERR_SSL_TLSV1_ALERT_INTERNAL_ERROR/i.test(String(err && err.message));
+}
+
 function sameOrigin(req, origin) {
   if (!origin || !req.headers.host) return false;
   const forwardedProto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim();
@@ -82,8 +90,8 @@ async function connectDatabase() {
     throw new Error('Missing MONGODB_URI. Copy .env.example to .env and add your MongoDB connection string.');
   }
 
-  if (/<[^>]+>/.test(MONGODB_URI)) {
-    throw new Error('MONGODB_URI still has placeholders. Replace the placeholder values in .env with your MongoDB Atlas database user credentials.');
+  if (hasMongoPlaceholder(MONGODB_URI)) {
+    throw new Error('MONGODB_URI still has placeholders. In Render, replace it with the full MongoDB Atlas connection string from Atlas Database > Connect > Drivers.');
   }
 
   const client = new MongoClient(MONGODB_URI);
@@ -253,5 +261,8 @@ connectDatabase().then(() => {
   });
 }).catch((err) => {
   console.error(err.message);
+  if (isTlsHandshakeError(err)) {
+    console.error('MongoDB TLS handshake failed. Verify MongoDB Atlas Network Access allows this Render service outbound IP range, then redeploy.');
+  }
   process.exit(1);
 });
