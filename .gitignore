@@ -14,3 +14,6 @@ npm-debug.log*
 *.pfx
 id_rsa
 id_ed25519
+
+#other
+AGENTS.md

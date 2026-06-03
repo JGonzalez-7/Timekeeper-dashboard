@@ -1,32 +1,93 @@
 # Timekeeper Dashboard
 
-A dark productivity dashboard for tracking work time, upcoming events, projects, and meetings. The app now runs through a small Node server and stores dashboard data in MongoDB instead of browser localStorage.
+> A dark, responsive productivity dashboard for tracking work time, events, projects, and meetings — backed by a lightweight Node API and MongoDB.
+
+![Node.js](https://img.shields.io/badge/Node.js-server-339933?logo=node.js&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb&logoColor=white)
+![Frontend](https://img.shields.io/badge/Frontend-Vanilla%20JS-F7DF1E?logo=javascript&logoColor=black)
+![Build](https://img.shields.io/badge/Build%20step-none-blue)
+
+The frontend is plain HTML, CSS, and JavaScript with no build step. A small
+Node server (`server.js`) serves the page and exposes a JSON API that persists
+data to MongoDB, replacing the original browser `localStorage` storage.
+
+---
+
+## Table of Contents
+
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
+- [API Reference](#api-reference)
+- [Deployment](#deployment)
+- [Data Storage](#data-storage)
+- [Project Structure](#project-structure)
+- [Notes & Behavior](#notes--behavior)
+
+---
 
 ## Features
 
-- Live clock and today's date in the header and overview
-- Work timer with start, pause, resume, stop, reset, and task naming
-- Recent sessions list with delete and daily/weekly totals
-- Upcoming events with title, date, time, location, notes, add, edit, and delete
-- Projects and meetings with badges, status labels, overdue detection, add, edit, and delete
-- Monthly calendar with markers for days that have items
-- Responsive dark UI with neon lime accents
-- MongoDB persistence through a local Node API
+- **Live clock & date** in the header and overview.
+- **Work timer** with start, pause, resume, stop, reset, and task naming.
+- **Recent sessions** list with delete plus daily and weekly totals.
+- **Upcoming events** with title, date, time, location, and notes (add, edit, delete).
+- **Projects & meetings** with badges, status labels, overdue detection (add, edit, delete).
+- **Monthly calendar** with markers on days that have items.
+- **Responsive dark UI** with neon-lime accents.
+- **MongoDB persistence** through a small Node API.
 
-## Connect MongoDB
+## Tech Stack
 
-Do not put your MongoDB password in `js/app.js` or any browser file. The browser can expose it. Put the connection string in `.env` and let `server.js` connect privately.
+| Layer | Technology |
+| --- | --- |
+| Frontend | HTML, CSS, vanilla JavaScript (no framework, no bundler) |
+| Backend | Node.js HTTP server (built-in modules only) |
+| Database | MongoDB (Atlas) via the official `mongodb` driver |
+| Hosting | Render (backend) + GitHub Pages (optional frontend) |
 
-1. In MongoDB Atlas, create or confirm a database user.
-2. In Atlas Network Access, allow your current IP address.
-3. Copy the connection string for the cluster shown in your MongoDB extension.
-4. Create `.env` from the example:
+---
+
+## Quick Start
+
+> **Prerequisites:** Node.js 18+ and a MongoDB connection string (e.g. from MongoDB Atlas).
 
 ```bash
+# 1. Install dependencies (first time only)
+npm install
+
+# 2. Create your local environment file from the template
 cp .env.example .env
+
+# 3. Add your MongoDB connection string to .env (see Configuration below)
+
+# 4. Start the server
+npm start
 ```
 
-5. Edit `.env` and replace the placeholders:
+Then open **http://localhost:5400**.
+
+> ⚠️ Open the app **through the Node server**, not by double-clicking
+> `index.html`. Opening the file directly bypasses the server, so `/api/data`
+> is unavailable and nothing saves to MongoDB.
+
+---
+
+## Configuration
+
+All settings are read from environment variables (locally via `.env`). Copy
+`.env.example` to `.env` and fill in your values:
+
+| Variable | Required | Default | Description |
+| --- | --- | --- | --- |
+| `MONGODB_URI` | ✅ | — | Full MongoDB Atlas connection string. |
+| `MONGODB_DB` | | `timekeeper` | Database name. |
+| `MONGODB_COLLECTION` | | `dashboard_data` | Collection name. |
+| `PORT` | | `5400` | Port the server listens on. |
+| `ALLOWED_ORIGINS` | | — | Comma-separated origins allowed to call the API (used when the frontend is hosted separately). |
+
+Example `.env`:
 
 ```bash
 MONGODB_URI=mongodb+srv://<db_user>:<db_password>@<cluster-host>/?retryWrites=true&w=majority&appName=<app_name>
@@ -34,54 +95,59 @@ MONGODB_DB=timekeeper
 MONGODB_COLLECTION=dashboard_data
 ```
 
-Use the username and password from your Atlas database user, not your MongoDB website login.
+### Security notes
 
-## Run Locally
+- **Never** put your MongoDB password in `js/app.js` or any other browser file —
+  the browser can expose it. The connection string belongs only in `.env`
+  (local) or in your host's environment variables (production).
+- Use the **database user** username and password from MongoDB Atlas, not your
+  MongoDB website login.
+- `.env` is gitignored, so your credentials are never committed.
 
-Install dependencies once:
+---
 
-```bash
-npm install
-```
+## API Reference
 
-Start the server:
+The server serves static files for any non-`/api/` path and exposes the
+following JSON endpoints:
 
-```bash
-npm start
-```
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `GET` | `/api/health` | Health check. Returns `{ "ok": true }`. |
+| `GET` | `/api/data` | Returns all data: `{ sessions, events, projects, meetings }`. |
+| `PUT` | `/api/data/:key` | Replaces one list. `:key` ∈ `sessions \| events \| projects \| meetings`. Body must be a JSON **array**. |
 
-Open:
+A `PUT` with a non-array body returns `400`, and an unknown `:key` returns `404`.
+
+---
+
+## Deployment
+
+Recommended topology:
 
 ```text
-http://localhost:5400
+GitHub Pages (frontend)  ->  Render (Node API)  ->  MongoDB Atlas (data)
 ```
 
-The app must be opened through the Node server so `/api/data` is available. Opening `index.html` directly will not connect to MongoDB.
-
-## Deploy GitHub Pages + Render + MongoDB
-
-Use this setup:
-
-```text
-GitHub Pages frontend -> Render Node API -> MongoDB Atlas
-```
-
-MongoDB Atlas stores the data, but it does not run the app backend. Render runs `server.js`, keeps `MONGODB_URI` private, and exposes the `/api/data` endpoint that GitHub Pages calls.
+MongoDB Atlas stores the data but does not run the backend. Render runs
+`server.js`, keeps `MONGODB_URI` private, and exposes the `/api/data` endpoint
+that the frontend calls.
 
 ### 1. MongoDB Atlas
 
-1. Create a database user in **Database Access**.
+1. Create a database user under **Database Access**.
 2. Copy the Atlas connection string for your cluster.
-3. In **Network Access**, allow Render to connect. For a quick test, allow access from anywhere with `0.0.0.0/0`; for a tighter production setup, use a static outbound IP option and add only that IP.
+3. Under **Network Access**, allow your host to connect. For a quick test, allow
+   `0.0.0.0/0`; for production, restrict to a static outbound IP.
 
-### 2. Render Backend
+### 2. Render (backend)
 
-Create a Render **Web Service** from this repository.
+Create a Render **Web Service** from this repository:
 
-- Build command: `npm install`
-- Start command: `npm start`
+- **Build command:** `npm install`
+- **Start command:** `npm start`
 
-Add these environment variables in the Render service dashboard. Do not commit these values to Git:
+Add these environment variables in the Render dashboard (never commit them):
 
 ```text
 MONGODB_URI=mongodb+srv://<db_user>:<db_password>@<cluster-host>/?retryWrites=true&w=majority&appName=<app_name>
@@ -90,59 +156,85 @@ MONGODB_COLLECTION=dashboard_data
 ALLOWED_ORIGINS=https://<github-username>.github.io
 ```
 
-Do not set `ALLOWED_ORIGINS` to the full repository path. Browser origins do not include paths, so use `https://<github-username>.github.io`, not `https://<github-username>.github.io/<repo-name>`.
-
-After saving the environment variables, redeploy the Render service. Check this URL after it finishes:
+After saving, redeploy and verify:
 
 ```text
-https://<render-service-name>.onrender.com/api/health
+https://<render-service-name>.onrender.com/api/health   ->   {"ok":true}
 ```
 
-It should return:
+> **`ALLOWED_ORIGINS` tip:** browser origins do not include paths. Use
+> `https://<github-username>.github.io`, **not**
+> `https://<github-username>.github.io/<repo-name>`.
 
-```json
-{"ok":true}
-```
+<details>
+<summary><strong>Troubleshooting deployment</strong></summary>
 
-### 3. GitHub Pages Frontend
+- **`querySrv ENOTFOUND _mongodb._tcp.YOUR_CLUSTER_HOST`** — `MONGODB_URI` in
+  Render is still a placeholder. Replace the whole value with the string from
+  Atlas **Database → Connect → Drivers**. It should contain your real hostname
+  (usually ending in `.mongodb.net`), not `YOUR_CLUSTER_HOST` or `<cluster-host>`.
+- **`tlsv1 alert internal error`** — Atlas is rejecting the TLS handshake before
+  authentication. Check Atlas **Network Access** and allow the Render outbound
+  IP range, or temporarily allow `0.0.0.0/0` to confirm network access is the
+  cause.
 
-Set the public Render API URL in `js/config.js`:
+</details>
 
-```js
-window.TIMEKEEPER_API_URL = 'https://<render-service-name>.onrender.com/api/data';
-```
+### 3. GitHub Pages (optional frontend)
 
-This URL is safe to commit because it is not a database password. The MongoDB URI must stay only in Render environment variables and your local `.env`.
+- **Backend only on Render:** leave `js/config.js` blank so the browser uses the
+  same Render service for `/api/data`.
+- **Frontend on GitHub Pages:** point it at the public Render API URL in
+  `js/config.js`:
 
-Commit and push the frontend changes, then open the GitHub Pages site. New dashboard data should save through Render into MongoDB.
+  ```js
+  window.TIMEKEEPER_API_URL = 'https://<render-service-name>.onrender.com/api/data';
+  ```
+
+This URL is safe to commit — it is not a secret. The MongoDB URI must stay only
+in Render's environment variables and your local `.env`. Commit and push the
+frontend changes, then open the GitHub Pages site; new data should save through
+Render into MongoDB.
+
+---
 
 ## Data Storage
 
-The API stores four documents in MongoDB, one for each app area:
+The API stores four documents in MongoDB, one per app area:
 
 - `sessions`
 - `events`
 - `projects`
 - `meetings`
 
-The database and collection are created automatically when the server first saves data. Existing localStorage data is copied to MongoDB once if the matching MongoDB list is empty, then the old localStorage keys are removed after the copy succeeds.
+The database and collection are created automatically the first time the server
+saves data. On first run, existing `localStorage` data is copied into MongoDB
+once (only if the matching MongoDB list is empty), then the old `localStorage`
+keys are removed after the copy succeeds.
 
-## File Structure
+---
+
+## Project Structure
 
 ```text
-index.html        Entry point served by Node
-server.js         MongoDB API and static file server
-css/style.css     All styles
-js/app.js         Frontend application logic
-package.json      Node dependency and start script
+index.html        Entry point served by the Node server
+server.js         MongoDB API + static file server
+css/
+  style.css       All styles
+js/
+  app.js          Frontend application logic
+  config.js       Sets the API base URL (window.TIMEKEEPER_API_URL)
+package.json      Dependencies and the start script
 .env.example      Environment variable template
 README.md         This file
 ```
 
-## Notes
+---
 
-- Week starts on Monday for weekly totals.
-- Timer sessions shorter than 1 second are discarded.
-- No timezone conversion is applied; dates and times use the browser's local time.
-- The `.env` file is ignored by Git so your MongoDB credentials are not committed.
+## Notes & Behavior
+
+- The work week starts on **Monday** for weekly totals.
+- Timer sessions shorter than **1 second** are discarded.
+- No timezone conversion is applied; dates and times use the **browser's local time**.
+- The `.env` file is gitignored, so MongoDB credentials are never committed.
 - Keep real Atlas hostnames, usernames, passwords, and app names in `.env` only.
