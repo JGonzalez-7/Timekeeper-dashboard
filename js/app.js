@@ -195,6 +195,14 @@
     return d.innerHTML;
   }
 
+  function itemDetail(label, value) {
+    if (!value) return '';
+    return '<div class="item-detail">' +
+      '<span class="item-detail-label">' + label + '</span>' +
+      '<span class="item-detail-text">' + escHtml(value) + '</span>' +
+    '</div>';
+  }
+
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 
   var DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -422,14 +430,16 @@
 
     list.innerHTML = sorted.map(function (e) {
       var badges = [];
+      var when = e.date + (e.time ? ' at ' + fmtTime12(e.time) : '');
       if (isToday(e.date)) badges.push('<span class="badge badge--today">Today</span>');
       else if (isTomorrow(e.date)) badges.push('<span class="badge badge--tomorrow">Tomorrow</span>');
 
       return '<div class="item-card" data-id="' + e.id + '">' +
         '<div class="item-left">' +
           '<div class="item-title">' + escHtml(e.title) + '</div>' +
-          '<div class="item-sub">' + e.date + (e.time ? ' &middot; ' + fmtTime12(e.time) : '') + (e.location ? ' &middot; <span class="item-written">' + escHtml(e.location) + '</span>' : '') + '</div>' +
-          (e.notes ? '<div class="item-sub item-note">' + escHtml(e.notes) + '</div>' : '') +
+          itemDetail('When', when) +
+          itemDetail('Location', e.location) +
+          itemDetail('Notes', e.notes) +
           (badges.length ? '<div class="item-badges">' + badges.join('') + '</div>' : '') +
         '</div>' +
         '<div class="item-actions">' +
@@ -677,6 +687,8 @@
 
     list.innerHTML = sorted.map(function (m) {
       var badges = [];
+      var when = m.date + (m.time ? ' at ' + fmtTime12(m.time) : '');
+      var notes = m.notes || m.description || '';
       badges.push('<span class="badge badge--meeting">Meeting</span>');
       var isPast = m.date < todayStr();
       if (isPast) badges.push('<span class="badge badge--overdue">Past</span>');
@@ -686,8 +698,9 @@
       return '<div class="item-card" data-id="' + m.id + '">' +
         '<div class="item-left">' +
           '<div class="item-title">' + escHtml(m.title) + '</div>' +
-          '<div class="item-sub">' + m.date + (m.time ? ' &middot; ' + fmtTime12(m.time) : '') + '</div>' +
-          (m.description ? '<div class="item-sub item-note">' + escHtml(m.description) + '</div>' : '') +
+          itemDetail('When', when) +
+          itemDetail('Location', m.location) +
+          itemDetail('Notes', notes) +
           '<div class="item-badges">' + badges.join('') + '</div>' +
         '</div>' +
         '<div class="item-actions">' +
@@ -715,7 +728,8 @@
       $('#meetingTitle').value = m.title;
       $('#meetingDate').value = m.date;
       $('#meetingTime').value = m.time || '';
-      $('#meetingDesc').value = m.description || '';
+      $('#meetingLocation').value = m.location || '';
+      $('#meetingDesc').value = m.notes || m.description || '';
     } else {
       $('#meetingModalTitle').textContent = 'Add Meeting';
       form.reset();
@@ -740,7 +754,8 @@
     var title = $('#meetingTitle').value.trim();
     var date = $('#meetingDate').value;
     var time = $('#meetingTime').value;
-    var description = $('#meetingDesc').value.trim();
+    var location = $('#meetingLocation').value.trim();
+    var notes = $('#meetingDesc').value.trim();
 
     if (!title || !date) return;
 
@@ -749,12 +764,12 @@
     if (editingMeetingId) {
       items = items.map(function (m) {
         if (m.id === editingMeetingId) {
-          return Object.assign({}, m, { title: title, date: date, time: time, description: description });
+          return Object.assign({}, m, { title: title, date: date, time: time, location: location, notes: notes, description: notes });
         }
         return m;
       });
     } else {
-      items.push({ id: uid(), title: title, date: date, time: time, description: description });
+      items.push({ id: uid(), title: title, date: date, time: time, location: location, notes: notes, description: notes });
     }
 
     save(KEYS.meetings, items);
@@ -864,6 +879,7 @@
         '<div class="cal-item-info">' +
           '<div class="cal-item-title">' + escHtml(e.title) + '</div>' +
           (eventMeta ? '<div class="cal-item-time">' + eventMeta + '</div>' : '') +
+          (e.notes ? '<div class="cal-item-time item-note">' + escHtml(e.notes) + '</div>' : '') +
         '</div>' +
       '</div>';
     });
@@ -879,11 +895,17 @@
     });
 
     meetItems.forEach(function (m) {
+      var meetingMeta = '';
+      var notes = m.notes || m.description || '';
+      if (m.time) meetingMeta = fmtTime12(m.time);
+      if (m.location) meetingMeta += (meetingMeta ? ' &middot; ' : '') + '<span class="item-written">' + escHtml(m.location) + '</span>';
+
       html += '<div class="cal-item">' +
         '<span class="cal-item-dot cal-item-dot--meeting"></span>' +
         '<div class="cal-item-info">' +
           '<div class="cal-item-title">' + escHtml(m.title) + '</div>' +
-          (m.time ? '<div class="cal-item-time">' + fmtTime12(m.time) + '</div>' : '') +
+          (meetingMeta ? '<div class="cal-item-time">' + meetingMeta + '</div>' : '') +
+          (notes ? '<div class="cal-item-time item-note">' + escHtml(notes) + '</div>' : '') +
         '</div>' +
       '</div>';
     });
