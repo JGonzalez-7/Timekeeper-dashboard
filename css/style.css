@@ -235,6 +235,40 @@ body::after {
 .card-projects .item-badges { gap: 4px; }
 .card-projects .badge { font-size: 0.58rem; padding: 1px 6px; }
 
+/* ===== Events ===== */
+.event-card-header {
+  align-items: flex-start;
+}
+
+.event-heading-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.event-view-select {
+  min-height: 32px;
+  max-width: 130px;
+  padding: 6px 28px 6px 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-family: var(--font);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  background: var(--bg);
+  color: var(--text-written);
+  outline: none;
+  color-scheme: dark;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.event-view-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(200, 255, 46, 0.1);
+}
+
 /* ===== Timer ===== */
 .timer-display {
   font-size: 1.42rem;
@@ -627,6 +661,7 @@ body::after {
 .badge--meeting { background: rgba(212, 94, 199, 0.14); color: var(--meeting); border: 1px solid rgba(212, 94, 199, 0.25); }
 
 .badge--upcoming { background: var(--accent-dim); color: var(--accent); border: 1px solid var(--border-accent); }
+.badge--recurring { background: rgba(48, 209, 88, 0.12); color: var(--success); border: 1px solid rgba(48, 209, 88, 0.25); }
 .badge--in-progress { background: rgba(255, 159, 10, 0.12); color: var(--warning); border: 1px solid rgba(255, 159, 10, 0.25); }
 .badge--completed { background: rgba(48, 209, 88, 0.12); color: var(--success); border: 1px solid rgba(48, 209, 88, 0.25); }
 .badge--cancelled { background: rgba(142, 142, 147, 0.08); color: var(--text-tertiary); border: 1px solid rgba(142, 142, 147, 0.15); }

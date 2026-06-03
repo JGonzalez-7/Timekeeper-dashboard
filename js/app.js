@@ -207,6 +207,143 @@
 
   var DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   var MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const RECURRENCE_VALUES = ['none', 'weekly', 'monthly', 'yearly'];
+  const RECURRENCE_LABELS = { weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly' };
+
+  function normalizeRecurrence(value) {
+    return RECURRENCE_VALUES.indexOf(value) === -1 ? 'none' : value;
+  }
+
+  function recurrenceLabel(value) {
+    return RECURRENCE_LABELS[normalizeRecurrence(value)] || '';
+  }
+
+  function eventStartTime(event) {
+    return event.startTime || event.time || '';
+  }
+
+  function eventEndTime(event) {
+    return event.endTime || '';
+  }
+
+  function eventSortTime(event) {
+    return eventStartTime(event) || eventEndTime(event) || '';
+  }
+
+  function eventTimeRange(event) {
+    var startTime = eventStartTime(event);
+    var endTime = eventEndTime(event);
+
+    if (startTime && endTime) return fmtTime12(startTime) + ' - ' + fmtTime12(endTime);
+    if (startTime) return fmtTime12(startTime);
+    if (endTime) return 'Ends ' + fmtTime12(endTime);
+    return '';
+  }
+
+  function eventWhen(event) {
+    var timeRange = eventTimeRange(event);
+    return event.date + (timeRange ? ' | ' + timeRange : '');
+  }
+
+  function timeMinutes(value) {
+    if (!value) return null;
+    var parts = value.split(':').map(Number);
+    if (parts.length < 2 || Number.isNaN(parts[0]) || Number.isNaN(parts[1])) return null;
+    return parts[0] * 60 + parts[1];
+  }
+
+  function currentMinutes() {
+    var now = new Date();
+    return now.getHours() * 60 + now.getMinutes();
+  }
+
+  function isEventOccurrencePast(event) {
+    var today = todayStr();
+    if (event.date < today) return true;
+    if (event.date > today) return false;
+
+    var compareTime = eventEndTime(event) || eventStartTime(event);
+    var minutes = timeMinutes(compareTime);
+    if (minutes === null) return false;
+    return minutes < currentMinutes();
+  }
+
+  function parseDateValue(value) {
+    var match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || '');
+    if (!match) return null;
+
+    var date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    return dateStr(date) === value ? date : null;
+  }
+
+  function addDays(date, days) {
+    var next = new Date(date);
+    next.setDate(next.getDate() + days);
+    return next;
+  }
+
+  function dateWithClampedDay(year, monthIndex, day) {
+    var lastDay = new Date(year, monthIndex + 1, 0).getDate();
+    return new Date(year, monthIndex, Math.min(day, lastDay));
+  }
+
+  function recurrenceDate(baseDate, recurrence, index) {
+    if (recurrence === 'weekly') {
+      return addDays(baseDate, index * 7);
+    }
+
+    if (recurrence === 'monthly') {
+      var monthIndex = baseDate.getMonth() + index;
+      var year = baseDate.getFullYear() + Math.floor(monthIndex / 12);
+      var month = monthIndex % 12;
+      return dateWithClampedDay(year, month, baseDate.getDate());
+    }
+
+    if (recurrence === 'yearly') {
+      return dateWithClampedDay(baseDate.getFullYear() + index, baseDate.getMonth(), baseDate.getDate());
+    }
+
+    return new Date(baseDate);
+  }
+
+  function eventOccurrence(event, occurrenceDate) {
+    return Object.assign({}, event, {
+      date: occurrenceDate,
+      occurrenceId: event.id + ':' + occurrenceDate,
+      recurrence: normalizeRecurrence(event.recurrence),
+      sourceDate: event.date
+    });
+  }
+
+  function eventOccurrencesBetween(events, startDate, endDate) {
+    var occurrences = [];
+
+    events.forEach(function (event) {
+      var baseDate = parseDateValue(event.date);
+      if (!baseDate) return;
+
+      var recurrence = normalizeRecurrence(event.recurrence);
+      if (recurrence === 'none') {
+        if (event.date >= startDate && event.date <= endDate) {
+          occurrences.push(eventOccurrence(event, event.date));
+        }
+        return;
+      }
+
+      var index = 0;
+      var guard = 0;
+      while (guard < 5000) {
+        var occurrence = recurrenceDate(baseDate, recurrence, index);
+        var occurrenceDate = dateStr(occurrence);
+        if (occurrenceDate > endDate) break;
+        if (occurrenceDate >= startDate) occurrences.push(eventOccurrence(event, occurrenceDate));
+        index += 1;
+        guard += 1;
+      }
+    });
+
+    return occurrences;
+  }
 
   // ===== Clock =====
   function updateClock() {
@@ -249,8 +386,10 @@
     var all = [];
     var nextUp = $('#nextUp');
 
-    events.forEach(function (e) {
-      if (e.date >= today) all.push({ title: e.title, date: e.date, time: e.time, type: 'event' });
+    eventOccurrencesBetween(events, today, dateStr(addDays(new Date(), 370))).forEach(function (e) {
+      if (!isEventOccurrencePast(e)) {
+        all.push({ title: e.title, date: e.date, time: eventSortTime(e), timeText: eventTimeRange(e), type: 'event' });
+      }
     });
 
     projects.forEach(function (p) {
@@ -270,7 +409,8 @@
     if (all.length) {
       var n = all[0];
       var label = n.title;
-      if (n.time) label += ' at ' + fmtTime12(n.time);
+      if (n.timeText) label += ' - ' + n.timeText;
+      else if (n.time) label += ' at ' + fmtTime12(n.time);
       nextUp.textContent = label;
       nextUp.classList.add('written-text');
     } else {
@@ -413,28 +553,60 @@
 
   // ===== Events =====
   var editingEventId = null;
+  var eventView = 'upcoming';
 
   function renderEvents() {
     var events = load(KEYS.events);
     var list = $('#eventsList');
+    var title = $('#eventSectionTitle');
+    var viewSelect = $('#eventView');
+    var today = todayStr();
+    var startDate = today;
+    var endDate = dateStr(addDays(new Date(), 370));
 
-    if (!events.length) {
-      list.innerHTML = '<p class="empty-state">No upcoming events. Add one to get started.</p>';
+    if (eventView === 'past') {
+      title.textContent = 'Past Events';
+      endDate = today;
+      startDate = events.reduce(function (earliest, event) {
+        if (!event.date) return earliest;
+        return !earliest || event.date < earliest ? event.date : earliest;
+      }, today);
+    } else {
+      title.textContent = 'Upcoming Events';
+    }
+
+    viewSelect.value = eventView;
+
+    var sorted = eventOccurrencesBetween(events, startDate, endDate).filter(function (event) {
+      var isPast = isEventOccurrencePast(event);
+      return eventView === 'past' ? isPast : !isPast;
+    }).sort(function (a, b) {
+      if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+      return eventSortTime(a).localeCompare(eventSortTime(b));
+    });
+
+    if (eventView === 'past') {
+      sorted.reverse();
+    }
+
+    if (!sorted.length) {
+      list.innerHTML = '<p class="empty-state">' +
+        (eventView === 'past' ? 'No past events yet.' : 'No upcoming events. Add one to get started.') +
+      '</p>';
       return;
     }
 
-    var sorted = events.slice().sort(function (a, b) {
-      if (a.date !== b.date) return a.date < b.date ? -1 : 1;
-      return (a.time || '').localeCompare(b.time || '');
-    });
-
     list.innerHTML = sorted.map(function (e) {
       var badges = [];
-      var when = e.date + (e.time ? ' at ' + fmtTime12(e.time) : '');
+      var when = eventWhen(e);
+      var repeat = recurrenceLabel(e.recurrence);
+      var isPast = isEventOccurrencePast(e);
+      if (repeat) badges.push('<span class="badge badge--recurring">' + repeat + '</span>');
+      if (isPast) badges.push('<span class="badge badge--overdue">Past</span>');
       if (isToday(e.date)) badges.push('<span class="badge badge--today">Today</span>');
       else if (isTomorrow(e.date)) badges.push('<span class="badge badge--tomorrow">Tomorrow</span>');
 
-      return '<div class="item-card" data-id="' + e.id + '">' +
+      return '<div class="item-card" data-id="' + e.occurrenceId + '">' +
         '<div class="item-left">' +
           '<div class="item-title">' + escHtml(e.title) + '</div>' +
           itemDetail('When', when) +
@@ -458,6 +630,7 @@
     editingEventId = id || null;
     var modal = $('#eventModal');
     var form = $('#eventForm');
+    $('#eventEndTime').setCustomValidity('');
 
     if (id) {
       var events = load(KEYS.events);
@@ -466,13 +639,16 @@
       $('#eventModalTitle').textContent = 'Edit Event';
       $('#eventTitle').value = e.title;
       $('#eventDate').value = e.date;
-      $('#eventTime').value = e.time || '';
+      $('#eventRecurrence').value = normalizeRecurrence(e.recurrence);
+      $('#eventStartTime').value = eventStartTime(e);
+      $('#eventEndTime').value = eventEndTime(e);
       $('#eventLocation').value = e.location || '';
       $('#eventNotes').value = e.notes || '';
     } else {
       $('#eventModalTitle').textContent = 'Add Event';
       form.reset();
       $('#eventDate').value = todayStr();
+      $('#eventRecurrence').value = 'none';
     }
 
     modal.showModal();
@@ -485,6 +661,10 @@
   }
 
   $('#btnAddEvent').addEventListener('click', function () { openEventModal(); });
+  $('#eventView').addEventListener('change', function (e) {
+    eventView = e.target.value === 'past' ? 'past' : 'upcoming';
+    renderEvents();
+  });
   $('#eventCancel').addEventListener('click', closeEventModal);
   $('#eventModal').addEventListener('close', function () { editingEventId = null; });
 
@@ -492,23 +672,43 @@
     e.preventDefault();
     var title = $('#eventTitle').value.trim();
     var date = $('#eventDate').value;
-    var time = $('#eventTime').value;
+    var recurrence = normalizeRecurrence($('#eventRecurrence').value);
+    var startTime = $('#eventStartTime').value;
+    var endTime = $('#eventEndTime').value;
     var location = $('#eventLocation').value.trim();
     var notes = $('#eventNotes').value.trim();
+    var endTimeInput = $('#eventEndTime');
 
     if (!title || !date) return;
+    endTimeInput.setCustomValidity('');
+
+    if (startTime && endTime && endTime <= startTime) {
+      endTimeInput.setCustomValidity('End time must be after start time.');
+      endTimeInput.reportValidity();
+      return;
+    }
 
     var events = load(KEYS.events);
+    var eventData = {
+      title: title,
+      date: date,
+      startTime: startTime,
+      endTime: endTime,
+      time: startTime,
+      recurrence: recurrence,
+      location: location,
+      notes: notes
+    };
 
     if (editingEventId) {
       events = events.map(function (ev) {
         if (ev.id === editingEventId) {
-          return Object.assign({}, ev, { title: title, date: date, time: time, location: location, notes: notes });
+          return Object.assign({}, ev, eventData);
         }
         return ev;
       });
     } else {
-      events.push({ id: uid(), title: title, date: date, time: time, location: location, notes: notes });
+      events.push(Object.assign({ id: uid() }, eventData));
     }
 
     save(KEYS.events, events);
@@ -813,10 +1013,12 @@
     var daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
     var prevDays = new Date(calYear, calMonth, 0).getDate();
     var today = todayStr();
+    var monthStart = calYear + '-' + pad(calMonth + 1) + '-01';
+    var monthEnd = calYear + '-' + pad(calMonth + 1) + '-' + pad(daysInMonth);
 
     // Compute marked dates from all sources
     var marked = {};
-    load(KEYS.events).forEach(function (e) { marked[e.date] = (marked[e.date] || 0) + 1; });
+    eventOccurrencesBetween(load(KEYS.events), monthStart, monthEnd).forEach(function (e) { marked[e.date] = (marked[e.date] || 0) + 1; });
     load(KEYS.projects).forEach(function (p) { marked[p.startDate] = (marked[p.startDate] || 0) + 1; if (p.endDate) marked[p.endDate] = (marked[p.endDate] || 0) + 1; });
     load(KEYS.meetings).forEach(function (m) { marked[m.date] = (marked[m.date] || 0) + 1; });
 
@@ -858,7 +1060,7 @@
     }
 
     var dateFilter = calSelectedDate;
-    var evItems = load(KEYS.events).filter(function (e) { return e.date === dateFilter; });
+    var evItems = eventOccurrencesBetween(load(KEYS.events), dateFilter, dateFilter);
     var projItems = load(KEYS.projects).filter(function (p) { return p.startDate === dateFilter || (p.endDate && p.endDate === dateFilter); });
     var meetItems = load(KEYS.meetings).filter(function (m) { return m.date === dateFilter; });
 
@@ -871,8 +1073,11 @@
 
     evItems.forEach(function (e) {
       var eventMeta = '';
-      if (e.time) eventMeta = fmtTime12(e.time);
+      var timeRange = eventTimeRange(e);
+      var repeat = recurrenceLabel(e.recurrence);
+      if (timeRange) eventMeta = timeRange;
       if (e.location) eventMeta += (eventMeta ? ' &middot; ' : '') + '<span class="item-written">' + escHtml(e.location) + '</span>';
+      if (repeat) eventMeta += (eventMeta ? ' &middot; ' : '') + repeat;
 
       html += '<div class="cal-item">' +
         '<span class="cal-item-dot cal-item-dot--event"></span>' +
