@@ -149,6 +149,7 @@
     var meetings = load(KEYS.meetings);
     var today = todayStr();
     var all = [];
+    var nextUp = $('#nextUp');
 
     events.forEach(function (e) {
       if (e.date >= today) all.push({ title: e.title, date: e.date, time: e.time, type: 'event' });
@@ -172,9 +173,11 @@
       var n = all[0];
       var label = n.title;
       if (n.time) label += ' at ' + fmtTime12(n.time);
-      $('#nextUp').textContent = label;
+      nextUp.textContent = label;
+      nextUp.classList.add('written-text');
     } else {
-      $('#nextUp').textContent = 'Nothing scheduled';
+      nextUp.textContent = 'Nothing scheduled';
+      nextUp.classList.remove('written-text');
     }
   }
 
@@ -335,8 +338,8 @@
       return '<div class="item-card" data-id="' + e.id + '">' +
         '<div class="item-left">' +
           '<div class="item-title">' + escHtml(e.title) + '</div>' +
-          '<div class="item-sub">' + e.date + (e.time ? ' &middot; ' + fmtTime12(e.time) : '') + (e.location ? ' &middot; ' + escHtml(e.location) : '') + '</div>' +
-          (e.notes ? '<div class="item-sub">' + escHtml(e.notes) + '</div>' : '') +
+          '<div class="item-sub">' + e.date + (e.time ? ' &middot; ' + fmtTime12(e.time) : '') + (e.location ? ' &middot; <span class="item-written">' + escHtml(e.location) + '</span>' : '') + '</div>' +
+          (e.notes ? '<div class="item-sub item-note">' + escHtml(e.notes) + '</div>' : '') +
           (badges.length ? '<div class="item-badges">' + badges.join('') + '</div>' : '') +
         '</div>' +
         '<div class="item-actions">' +
@@ -473,7 +476,7 @@
         '<div class="item-left">' +
           '<div class="item-title">' + escHtml(p.title) + '</div>' +
           '<div class="item-sub">' + dateLine + '</div>' +
-          (p.description ? '<div class="item-sub">' + escHtml(p.description) + '</div>' : '') +
+          (p.description ? '<div class="item-sub item-note">' + escHtml(p.description) + '</div>' : '') +
           '<div class="item-badges">' + badges.join('') + '</div>' +
         '</div>' +
         '<div class="item-actions">' +
@@ -594,7 +597,7 @@
         '<div class="item-left">' +
           '<div class="item-title">' + escHtml(m.title) + '</div>' +
           '<div class="item-sub">' + m.date + (m.time ? ' &middot; ' + fmtTime12(m.time) : '') + '</div>' +
-          (m.description ? '<div class="item-sub">' + escHtml(m.description) + '</div>' : '') +
+          (m.description ? '<div class="item-sub item-note">' + escHtml(m.description) + '</div>' : '') +
           '<div class="item-badges">' + badges.join('') + '</div>' +
         '</div>' +
         '<div class="item-actions">' +
@@ -762,11 +765,15 @@
     var html = '';
 
     evItems.forEach(function (e) {
+      var eventMeta = '';
+      if (e.time) eventMeta = fmtTime12(e.time);
+      if (e.location) eventMeta += (eventMeta ? ' &middot; ' : '') + '<span class="item-written">' + escHtml(e.location) + '</span>';
+
       html += '<div class="cal-item">' +
         '<span class="cal-item-dot cal-item-dot--event"></span>' +
         '<div class="cal-item-info">' +
           '<div class="cal-item-title">' + escHtml(e.title) + '</div>' +
-          (e.time ? '<div class="cal-item-time">' + fmtTime12(e.time) + (e.location ? ' &middot; ' + escHtml(e.location) : '') + '</div>' : '') +
+          (eventMeta ? '<div class="cal-item-time">' + eventMeta + '</div>' : '') +
         '</div>' +
       '</div>';
     });
