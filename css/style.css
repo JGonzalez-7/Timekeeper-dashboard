@@ -670,6 +670,13 @@ body::after {
   box-shadow: 0 0 0 3px rgba(200, 255, 46, 0.1);
 }
 
+.form-group input[type="date"]::-webkit-calendar-picker-indicator,
+.form-group input[type="time"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 1;
+  filter: invert(94%) sepia(76%) saturate(1434%) hue-rotate(22deg) brightness(105%) contrast(101%);
+}
+
 .form-group select option { background: var(--surface-solid); color: var(--text); }
 
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
