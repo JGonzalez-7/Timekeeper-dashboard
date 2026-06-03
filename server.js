@@ -5,10 +5,12 @@ const { MongoClient } = require('mongodb');
 
 loadEnv();
 
-const PORT = Number(process.env.PORT || 5400);
+const PORT = Number(process.env.PORT || (process.env.RENDER ? 10000 : 5400));
+const HOST = process.env.HOST || '0.0.0.0';
 const MONGODB_URI = process.env.MONGODB_URI;
 const DB_NAME = process.env.MONGODB_DB || 'timekeeper';
 const COLLECTION_NAME = process.env.MONGODB_COLLECTION || 'dashboard_data';
+const ALLOWED_ORIGINS = parseOrigins(process.env.ALLOWED_ORIGINS);
 const PUBLIC_DIR = __dirname;
 const STATIC_PREFIXES = ['/css/', '/js/'];
 const DATA_KEYS = ['sessions', 'events', 'projects', 'meetings'];
@@ -37,6 +39,44 @@ function loadEnv() {
   });
 }
 
+function parseOrigins(value) {
+  return new Set(String(value || '').split(',').map((origin) => {
+    const trimmed = origin.trim();
+    if (!trimmed || trimmed === '*') return trimmed;
+
+    try {
+      return new URL(trimmed).origin;
+    } catch (err) {
+      return trimmed.replace(/\/+$/, '');
+    }
+  }).filter(Boolean));
+}
+
+function sameOrigin(req, origin) {
+  if (!origin || !req.headers.host) return false;
+  const forwardedProto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim();
+  const protocol = forwardedProto || 'http';
+  return origin === `${protocol}://${req.headers.host}`;
+}
+
+function isAllowedOrigin(req, origin) {
+  return sameOrigin(req, origin) || ALLOWED_ORIGINS.has('*') || ALLOWED_ORIGINS.has(origin);
+}
+
+function responseHeaders(req, headers = {}) {
+  const origin = req.headers.origin;
+  const nextHeaders = { ...headers };
+
+  if (origin && isAllowedOrigin(req, origin)) {
+    nextHeaders['Access-Control-Allow-Origin'] = origin;
+    nextHeaders['Access-Control-Allow-Methods'] = 'GET, PUT, OPTIONS';
+    nextHeaders['Access-Control-Allow-Headers'] = 'Content-Type';
+    nextHeaders.Vary = 'Origin';
+  }
+
+  return nextHeaders;
+}
+
 async function connectDatabase() {
   if (!MONGODB_URI) {
     throw new Error('Missing MONGODB_URI. Copy .env.example to .env and add your MongoDB connection string.');
@@ -52,10 +92,10 @@ async function connectDatabase() {
   await collection.createIndex({ key: 1 }, { unique: true });
 }
 
-function json(res, statusCode, payload) {
-  res.writeHead(statusCode, {
+function json(req, res, statusCode, payload) {
+  res.writeHead(statusCode, responseHeaders(req, {
     'Content-Type': 'application/json'
-  });
+  }));
   res.end(JSON.stringify(payload));
 }
 
@@ -106,18 +146,24 @@ async function saveData(key, items) {
 }
 
 async function handleApi(req, res, pathname) {
+  if (req.headers.origin && !isAllowedOrigin(req, req.headers.origin)) {
+    json(req, res, 403, { error: 'Origin not allowed' });
+    return;
+  }
+
   if (req.method === 'OPTIONS') {
-    json(res, 204, {});
+    res.writeHead(204, responseHeaders(req));
+    res.end();
     return;
   }
 
   if (pathname === '/api/health' && req.method === 'GET') {
-    json(res, 200, { ok: true });
+    json(req, res, 200, { ok: true });
     return;
   }
 
   if (pathname === '/api/data' && req.method === 'GET') {
-    json(res, 200, await allData());
+    json(req, res, 200, await allData());
     return;
   }
 
@@ -125,22 +171,22 @@ async function handleApi(req, res, pathname) {
   if (match && req.method === 'PUT') {
     const key = match[1];
     if (!DATA_KEY_SET.has(key)) {
-      json(res, 404, { error: 'Unknown data key' });
+      json(req, res, 404, { error: 'Unknown data key' });
       return;
     }
 
     const items = await readBody(req);
     if (!Array.isArray(items)) {
-      json(res, 400, { error: 'Expected an array' });
+      json(req, res, 400, { error: 'Expected an array' });
       return;
     }
 
     await saveData(key, items);
-    json(res, 200, { ok: true });
+    json(req, res, 200, { ok: true });
     return;
   }
 
-  json(res, 404, { error: 'Not found' });
+  json(req, res, 404, { error: 'Not found' });
 }
 
 function contentType(filePath) {
@@ -196,13 +242,13 @@ async function handleRequest(req, res) {
     serveStatic(req, res, decodeURIComponent(url.pathname));
   } catch (err) {
     console.error(err);
-    json(res, 500, { error: 'Server error' });
+    json(req, res, 500, { error: 'Server error' });
   }
 }
 
 connectDatabase().then(() => {
-  http.createServer(handleRequest).listen(PORT, () => {
-    console.log(`Timekeeper running at http://localhost:${PORT}`);
+  http.createServer(handleRequest).listen(PORT, HOST, () => {
+    console.log(`Timekeeper running at ${process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`}`);
     console.log(`MongoDB database: ${DB_NAME}.${COLLECTION_NAME}`);
   });
 }).catch((err) => {

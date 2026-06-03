@@ -5,9 +5,16 @@
   // ===== Storage =====
   var KEYS = { sessions: 'sessions', events: 'events', projects: 'projects', meetings: 'meetings' };
   var LEGACY_KEYS = { sessions: 'tk_sessions', events: 'tk_events', projects: 'tk_projects', meetings: 'tk_meetings' };
-  var API_URL = '/api/data';
+  var API_URL = apiUrl();
   var store = { sessions: [], events: [], projects: [], meetings: [] };
   var storageReady = false;
+
+  function apiUrl() {
+    var configured = String(window.TIMEKEEPER_API_URL || '').trim().replace(/\/+$/, '');
+    if (!configured) return '/api/data';
+    if (/\/api\/data$/.test(configured)) return configured;
+    return configured + '/api/data';
+  }
 
   function load(key) {
     return store[key] || [];

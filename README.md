@@ -58,6 +58,64 @@ http://localhost:5400
 
 The app must be opened through the Node server so `/api/data` is available. Opening `index.html` directly will not connect to MongoDB.
 
+## Deploy GitHub Pages + Render + MongoDB
+
+Use this setup:
+
+```text
+GitHub Pages frontend -> Render Node API -> MongoDB Atlas
+```
+
+MongoDB Atlas stores the data, but it does not run the app backend. Render runs `server.js`, keeps `MONGODB_URI` private, and exposes the `/api/data` endpoint that GitHub Pages calls.
+
+### 1. MongoDB Atlas
+
+1. Create a database user in **Database Access**.
+2. Copy the Atlas connection string for your cluster.
+3. In **Network Access**, allow Render to connect. For a quick test, allow access from anywhere with `0.0.0.0/0`; for a tighter production setup, use a static outbound IP option and add only that IP.
+
+### 2. Render Backend
+
+Create a Render **Web Service** from this repository.
+
+- Build command: `npm install`
+- Start command: `npm start`
+
+Add these environment variables in the Render service dashboard. Do not commit these values to Git:
+
+```text
+MONGODB_URI=mongodb+srv://<db_user>:<db_password>@<cluster-host>/?retryWrites=true&w=majority&appName=<app_name>
+MONGODB_DB=timekeeper
+MONGODB_COLLECTION=dashboard_data
+ALLOWED_ORIGINS=https://<github-username>.github.io
+```
+
+Do not set `ALLOWED_ORIGINS` to the full repository path. Browser origins do not include paths, so use `https://<github-username>.github.io`, not `https://<github-username>.github.io/<repo-name>`.
+
+After saving the environment variables, redeploy the Render service. Check this URL after it finishes:
+
+```text
+https://<render-service-name>.onrender.com/api/health
+```
+
+It should return:
+
+```json
+{"ok":true}
+```
+
+### 3. GitHub Pages Frontend
+
+Set the public Render API URL in `js/config.js`:
+
+```js
+window.TIMEKEEPER_API_URL = 'https://<render-service-name>.onrender.com/api/data';
+```
+
+This URL is safe to commit because it is not a database password. The MongoDB URI must stay only in Render environment variables and your local `.env`.
+
+Commit and push the frontend changes, then open the GitHub Pages site. New dashboard data should save through Render into MongoDB.
+
 ## Data Storage
 
 The API stores four documents in MongoDB, one for each app area:
