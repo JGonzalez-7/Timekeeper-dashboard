@@ -7,6 +7,8 @@
 ![Frontend](https://img.shields.io/badge/Frontend-Vanilla%20JS-F7DF1E?logo=javascript&logoColor=black)
 ![Build](https://img.shields.io/badge/Build%20step-none-blue)
 
+**🔗 Live app:** <https://timekeeper-dashboard.onrender.com>
+
 The frontend is plain HTML, CSS, and JavaScript with no build step. A small
 Node server (`server.js`) serves the page and exposes a JSON API that persists
 data to MongoDB, replacing the original browser `localStorage` storage.
@@ -159,7 +161,7 @@ ALLOWED_ORIGINS=https://<github-username>.github.io
 After saving, redeploy and verify:
 
 ```text
-https://<render-service-name>.onrender.com/api/health   ->   {"ok":true}
+https://timekeeper-dashboard.onrender.com/api/health   ->   {"ok":true}
 ```
 
 > **`ALLOWED_ORIGINS` tip:** browser origins do not include paths. Use
@@ -182,13 +184,13 @@ https://<render-service-name>.onrender.com/api/health   ->   {"ok":true}
 
 ### 3. GitHub Pages (optional frontend)
 
-- **Backend only on Render:** leave `js/config.js` blank so the browser uses the
-  same Render service for `/api/data`.
-- **Frontend on GitHub Pages:** point it at the public Render API URL in
-  `js/config.js`:
+- **Backend only on Render:** leave `js/config.js` blank (`''`) so the browser
+  uses the same Render service for `/api/data`.
+- **Frontend on GitHub Pages:** point `js/config.js` at the public Render base
+  URL (the app appends `/api/data` for you):
 
   ```js
-  window.TIMEKEEPER_API_URL = 'https://<render-service-name>.onrender.com/api/data';
+  window.TIMEKEEPER_API_URL = 'https://timekeeper-dashboard.onrender.com';
   ```
 
 This URL is safe to commit — it is not a secret. The MongoDB URI must stay only
