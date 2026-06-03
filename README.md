@@ -9,6 +9,8 @@
 
 **🔗 Live app:** <https://timekeeper-dashboard.onrender.com>
 
+**🔗 Test page:** <https://jgonzalez-7.github.io/Timekeeper-dashboard/>
+
 The frontend is plain HTML, CSS, and JavaScript with no build step. A small
 Node server (`server.js`) serves the page and exposes a JSON API that persists
 data to MongoDB, replacing the original browser `localStorage` storage.
