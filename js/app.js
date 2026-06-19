@@ -518,6 +518,31 @@
   btnReset.addEventListener('click', resetTimer);
 
   // ===== Sessions =====
+  function sessionTaskName(session) {
+    var task = session.task ? String(session.task).trim() : '';
+    return task || 'Untitled session';
+  }
+
+  function editSessionName(id) {
+    var sessions = load(KEYS.sessions);
+    var session = sessions.find(function (s) { return s.id === id; });
+    if (!session) return;
+
+    var nextTask = window.prompt('Edit session name', sessionTaskName(session));
+    if (nextTask === null) return;
+
+    nextTask = nextTask.trim();
+    if (!nextTask) return;
+
+    sessions = sessions.map(function (s) {
+      if (s.id === id) return Object.assign({}, s, { task: nextTask });
+      return s;
+    });
+
+    save(KEYS.sessions, sessions);
+    renderSessions();
+  }
+
   function renderSessions() {
     var sessions = load(KEYS.sessions);
     var list = $('#sessionsList');
@@ -530,25 +555,34 @@
     list.innerHTML = sessions.slice(0, 20).map(function (s) {
       return '<div class="session-item" data-id="' + s.id + '">' +
         '<div class="session-info">' +
-          '<div class="session-task">' + escHtml(s.task) + '</div>' +
+          '<div class="session-task">' + escHtml(sessionTaskName(s)) + '</div>' +
           '<div class="session-meta">' + s.date + (s.startTime ? ' &middot; ' + fmtTime12(s.startTime) + ' - ' + fmtTime12(s.endTime) : '') + '</div>' +
         '</div>' +
-        '<span class="session-duration">' + fmtDuration(s.duration) + '</span>' +
-        '<button class="btn-delete" data-delete-session="' + s.id + '" aria-label="Delete session" title="Delete">' +
-          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>' +
-        '</button>' +
+        '<div class="session-actions">' +
+          '<span class="session-duration">' + fmtDuration(s.duration) + '</span>' +
+          '<button class="btn-delete btn-edit" data-edit-session="' + s.id + '" aria-label="Edit session name" title="Edit">' +
+            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
+          '</button>' +
+          '<button class="btn-delete" data-delete-session="' + s.id + '" aria-label="Delete session" title="Delete">' +
+            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>' +
+          '</button>' +
+        '</div>' +
       '</div>';
     }).join('');
   }
 
   $('#sessionsList').addEventListener('click', function (e) {
-    var btn = e.target.closest('[data-delete-session]');
-    if (!btn) return;
-    var id = btn.dataset.deleteSession;
-    var sessions = load(KEYS.sessions).filter(function (s) { return s.id !== id; });
-    save(KEYS.sessions, sessions);
-    renderSessions();
-    computeTotals();
+    var editBtn = e.target.closest('[data-edit-session]');
+    var delBtn = e.target.closest('[data-delete-session]');
+
+    if (editBtn) {
+      editSessionName(editBtn.dataset.editSession);
+    } else if (delBtn) {
+      var sessions = load(KEYS.sessions).filter(function (s) { return s.id !== delBtn.dataset.deleteSession; });
+      save(KEYS.sessions, sessions);
+      renderSessions();
+      computeTotals();
+    }
   });
 
   // ===== Events =====

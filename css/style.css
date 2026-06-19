@@ -395,6 +395,7 @@ body::after {
 }
 
 .btn-delete:hover { color: var(--danger); background: rgba(255, 69, 58, 0.1); }
+.btn-edit:hover { color: var(--accent); background: var(--accent-dim); }
 
 /* ===== Sessions List ===== */
 .sessions-section { min-height: 0; }
@@ -435,6 +436,13 @@ body::after {
   font-variant-numeric: tabular-nums;
   color: var(--accent);
   white-space: nowrap;
+}
+
+.session-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
 /* ===== Calendar ===== */
