@@ -36,8 +36,8 @@ data to MongoDB, replacing the original browser `localStorage` storage.
 - **Live clock & date** in the header and overview.
 - **Work timer** with start, pause, resume, stop, reset, and task naming.
 - **Recent sessions** list with delete plus daily and weekly totals.
-- **Events** with title, date, time, location, notes, recurring schedules, and upcoming/past views (add, edit, delete).
-- **Projects & meetings** with badges, status labels, overdue detection, recurring meetings, and upcoming/past meeting views (add, edit, delete).
+- **Events** with title, one or more dates, time, location, notes, recurring schedules, and upcoming/past views (add, edit, delete).
+- **Projects & meetings** with badges, status labels, overdue detection, multiple meeting dates, recurring meetings, and upcoming/past meeting views (add, edit, delete).
 - **Subscriptions** tracker with platform names, amounts, active/past views, deleted dates, and a total cost.
 - **Monthly calendar** with markers on days that have items.
 - **Responsive dark UI** with neon-lime accents.

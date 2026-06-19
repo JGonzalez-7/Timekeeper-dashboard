@@ -232,6 +232,60 @@
     return RECURRENCE_LABELS[normalizeRecurrence(value)] || '';
   }
 
+  function normalizedDates(dates) {
+    var seen = {};
+    var list = Array.isArray(dates) ? dates : [];
+
+    return list.filter(function (date) {
+      if (!parseDateValue(date) || seen[date]) return false;
+      seen[date] = true;
+      return true;
+    }).sort();
+  }
+
+  function itemExtraDates(item) {
+    var dates = Array.isArray(item.dates) ? item.dates : [];
+    var extraDates = Array.isArray(item.extraDates) ? item.extraDates : [];
+    return normalizedDates(dates.concat(extraDates));
+  }
+
+  function itemBaseDates(item) {
+    return normalizedDates([item.date].concat(itemExtraDates(item)));
+  }
+
+  function itemEarliestDate(item) {
+    return itemBaseDates(item)[0] || '';
+  }
+
+  function savedExtraDates(primaryDate, extraDates) {
+    return normalizedDates(extraDates).filter(function (date) {
+      return date !== primaryDate;
+    });
+  }
+
+  function withAddedDate(dates, date, primaryDate) {
+    if (!parseDateValue(date) || date === primaryDate) return normalizedDates(dates);
+    return normalizedDates(dates.concat(date));
+  }
+
+  function withoutDate(dates, date) {
+    return normalizedDates(dates).filter(function (item) {
+      return item !== date;
+    });
+  }
+
+  function renderDateChips(containerId, dates, removeAttribute) {
+    var container = $('#' + containerId);
+    if (!container) return;
+
+    container.innerHTML = normalizedDates(dates).map(function (date) {
+      return '<span class="date-chip">' +
+        escHtml(date) +
+        '<button type="button" class="date-chip-remove" ' + removeAttribute + '="' + escHtml(date) + '" aria-label="Remove ' + escHtml(date) + '">&times;</button>' +
+      '</span>';
+    }).join('');
+  }
+
   function eventStartTime(event) {
     return event.startTime || event.time || '';
   }
@@ -338,12 +392,12 @@
     return new Date(baseDate);
   }
 
-  function eventOccurrence(event, occurrenceDate) {
+  function eventOccurrence(event, sourceDate, occurrenceDate) {
     return Object.assign({}, event, {
       date: occurrenceDate,
-      occurrenceId: event.id + ':' + occurrenceDate,
+      occurrenceId: event.id + ':' + sourceDate + ':' + occurrenceDate,
       recurrence: normalizeRecurrence(event.recurrence),
-      sourceDate: event.date
+      sourceDate: sourceDate
     });
   }
 
@@ -351,38 +405,40 @@
     var occurrences = [];
 
     events.forEach(function (event) {
-      var baseDate = parseDateValue(event.date);
-      if (!baseDate) return;
+      itemBaseDates(event).forEach(function (sourceDate) {
+        var baseDate = parseDateValue(sourceDate);
+        if (!baseDate) return;
 
-      var recurrence = normalizeRecurrence(event.recurrence);
-      if (recurrence === 'none') {
-        if (event.date >= startDate && event.date <= endDate) {
-          occurrences.push(eventOccurrence(event, event.date));
+        var recurrence = normalizeRecurrence(event.recurrence);
+        if (recurrence === 'none') {
+          if (sourceDate >= startDate && sourceDate <= endDate) {
+            occurrences.push(eventOccurrence(event, sourceDate, sourceDate));
+          }
+          return;
         }
-        return;
-      }
 
-      var index = 0;
-      var guard = 0;
-      while (guard < 5000) {
-        var occurrence = recurrenceDate(baseDate, recurrence, index);
-        var occurrenceDate = dateStr(occurrence);
-        if (occurrenceDate > endDate) break;
-        if (occurrenceDate >= startDate) occurrences.push(eventOccurrence(event, occurrenceDate));
-        index += 1;
-        guard += 1;
-      }
+        var index = 0;
+        var guard = 0;
+        while (guard < 5000) {
+          var occurrence = recurrenceDate(baseDate, recurrence, index);
+          var occurrenceDate = dateStr(occurrence);
+          if (occurrenceDate > endDate) break;
+          if (occurrenceDate >= startDate) occurrences.push(eventOccurrence(event, sourceDate, occurrenceDate));
+          index += 1;
+          guard += 1;
+        }
+      });
     });
 
     return occurrences;
   }
 
-  function meetingOccurrence(meeting, occurrenceDate) {
+  function meetingOccurrence(meeting, sourceDate, occurrenceDate) {
     return Object.assign({}, meeting, {
       date: occurrenceDate,
-      occurrenceId: meeting.id + ':' + occurrenceDate,
+      occurrenceId: meeting.id + ':' + sourceDate + ':' + occurrenceDate,
       recurrence: normalizeRecurrence(meeting.recurrence),
-      sourceDate: meeting.date
+      sourceDate: sourceDate
     });
   }
 
@@ -390,27 +446,29 @@
     var occurrences = [];
 
     meetings.forEach(function (meeting) {
-      var baseDate = parseDateValue(meeting.date);
-      if (!baseDate) return;
+      itemBaseDates(meeting).forEach(function (sourceDate) {
+        var baseDate = parseDateValue(sourceDate);
+        if (!baseDate) return;
 
-      var recurrence = normalizeRecurrence(meeting.recurrence);
-      if (recurrence === 'none') {
-        if (meeting.date >= startDate && meeting.date <= endDate) {
-          occurrences.push(meetingOccurrence(meeting, meeting.date));
+        var recurrence = normalizeRecurrence(meeting.recurrence);
+        if (recurrence === 'none') {
+          if (sourceDate >= startDate && sourceDate <= endDate) {
+            occurrences.push(meetingOccurrence(meeting, sourceDate, sourceDate));
+          }
+          return;
         }
-        return;
-      }
 
-      var index = 0;
-      var guard = 0;
-      while (guard < 5000) {
-        var occurrence = recurrenceDate(baseDate, recurrence, index);
-        var occurrenceDate = dateStr(occurrence);
-        if (occurrenceDate > endDate) break;
-        if (occurrenceDate >= startDate) occurrences.push(meetingOccurrence(meeting, occurrenceDate));
-        index += 1;
-        guard += 1;
-      }
+        var index = 0;
+        var guard = 0;
+        while (guard < 5000) {
+          var occurrence = recurrenceDate(baseDate, recurrence, index);
+          var occurrenceDate = dateStr(occurrence);
+          if (occurrenceDate > endDate) break;
+          if (occurrenceDate >= startDate) occurrences.push(meetingOccurrence(meeting, sourceDate, occurrenceDate));
+          index += 1;
+          guard += 1;
+        }
+      });
     });
 
     return occurrences;
@@ -662,6 +720,17 @@
   // ===== Events =====
   var editingEventId = null;
   var eventView = 'upcoming';
+  var eventExtraDates = [];
+
+  function renderEventExtraDates() {
+    renderDateChips('eventDatesList', eventExtraDates, 'data-remove-event-date');
+  }
+
+  function addEventExtraDate() {
+    eventExtraDates = withAddedDate(eventExtraDates, $('#eventExtraDate').value, $('#eventDate').value);
+    $('#eventExtraDate').value = '';
+    renderEventExtraDates();
+  }
 
   function renderEvents() {
     var events = load(KEYS.events);
@@ -673,8 +742,9 @@
     if (eventView === 'past') {
       endDate = today;
       startDate = events.reduce(function (earliest, event) {
-        if (!event.date) return earliest;
-        return !earliest || event.date < earliest ? event.date : earliest;
+        var eventDate = itemEarliestDate(event);
+        if (!eventDate) return earliest;
+        return !earliest || eventDate < earliest ? eventDate : earliest;
       }, today);
     }
 
@@ -746,6 +816,7 @@
       $('#eventModalTitle').textContent = 'Edit Event';
       $('#eventTitle').value = e.title;
       $('#eventDate').value = e.date;
+      eventExtraDates = itemExtraDates(e);
       $('#eventRecurrence').value = normalizeRecurrence(e.recurrence);
       $('#eventStartTime').value = eventStartTime(e);
       $('#eventEndTime').value = eventEndTime(e);
@@ -755,9 +826,11 @@
       $('#eventModalTitle').textContent = 'Add Event';
       form.reset();
       $('#eventDate').value = todayStr();
+      eventExtraDates = [];
       $('#eventRecurrence').value = 'none';
     }
 
+    renderEventExtraDates();
     modal.showModal();
     $('#eventTitle').focus();
   }
@@ -768,6 +841,17 @@
   }
 
   $('#btnAddEvent').addEventListener('click', function () { openEventModal(); });
+  $('#eventAddDate').addEventListener('click', addEventExtraDate);
+  $('#eventDate').addEventListener('change', function () {
+    eventExtraDates = savedExtraDates($('#eventDate').value, eventExtraDates);
+    renderEventExtraDates();
+  });
+  $('#eventDatesList').addEventListener('click', function (e) {
+    var removeBtn = e.target.closest('[data-remove-event-date]');
+    if (!removeBtn) return;
+    eventExtraDates = withoutDate(eventExtraDates, removeBtn.dataset.removeEventDate);
+    renderEventExtraDates();
+  });
   $$('[data-event-view]').forEach(function (tab) {
     tab.addEventListener('click', function () {
       eventView = tab.dataset.eventView === 'past' ? 'past' : 'upcoming';
@@ -805,6 +889,7 @@
       endTime: endTime,
       time: startTime,
       recurrence: recurrence,
+      dates: savedExtraDates(date, eventExtraDates),
       location: location,
       notes: notes
     };
@@ -1012,6 +1097,17 @@
   // ===== Meetings =====
   var editingMeetingId = null;
   var meetingView = 'upcoming';
+  var meetingExtraDates = [];
+
+  function renderMeetingExtraDates() {
+    renderDateChips('meetingDatesList', meetingExtraDates, 'data-remove-meeting-date');
+  }
+
+  function addMeetingExtraDate() {
+    meetingExtraDates = withAddedDate(meetingExtraDates, $('#meetingExtraDate').value, $('#meetingDate').value);
+    $('#meetingExtraDate').value = '';
+    renderMeetingExtraDates();
+  }
 
   function renderMeetings() {
     var items = load(KEYS.meetings);
@@ -1029,8 +1125,9 @@
     if (meetingView === 'past') {
       endDate = today;
       startDate = items.reduce(function (earliest, meeting) {
-        if (!meeting.date) return earliest;
-        return !earliest || meeting.date < earliest ? meeting.date : earliest;
+        var meetingDate = itemEarliestDate(meeting);
+        if (!meetingDate) return earliest;
+        return !earliest || meetingDate < earliest ? meetingDate : earliest;
       }, today);
     }
 
@@ -1100,6 +1197,7 @@
       $('#meetingTitle').value = m.title;
       $('#meetingDate').value = m.date;
       $('#meetingTime').value = m.time || '';
+      meetingExtraDates = itemExtraDates(m);
       $('#meetingRecurrence').value = normalizeRecurrence(m.recurrence);
       $('#meetingLocation').value = m.location || '';
       $('#meetingDesc').value = m.notes || m.description || '';
@@ -1107,9 +1205,11 @@
       $('#meetingModalTitle').textContent = 'Add Meeting';
       form.reset();
       $('#meetingDate').value = todayStr();
+      meetingExtraDates = [];
       $('#meetingRecurrence').value = 'none';
     }
 
+    renderMeetingExtraDates();
     modal.showModal();
     $('#meetingTitle').focus();
   }
@@ -1120,6 +1220,17 @@
   }
 
   $('#btnAddMeeting').addEventListener('click', function () { openMeetingModal(); });
+  $('#meetingAddDate').addEventListener('click', addMeetingExtraDate);
+  $('#meetingDate').addEventListener('change', function () {
+    meetingExtraDates = savedExtraDates($('#meetingDate').value, meetingExtraDates);
+    renderMeetingExtraDates();
+  });
+  $('#meetingDatesList').addEventListener('click', function (e) {
+    var removeBtn = e.target.closest('[data-remove-meeting-date]');
+    if (!removeBtn) return;
+    meetingExtraDates = withoutDate(meetingExtraDates, removeBtn.dataset.removeMeetingDate);
+    renderMeetingExtraDates();
+  });
   $$('[data-meeting-view]').forEach(function (tab) {
     tab.addEventListener('click', function () {
       meetingView = tab.dataset.meetingView === 'past' ? 'past' : 'upcoming';
@@ -1150,6 +1261,7 @@
             date: date,
             time: time,
             recurrence: recurrence,
+            dates: savedExtraDates(date, meetingExtraDates),
             location: location,
             notes: notes,
             description: notes
@@ -1164,6 +1276,7 @@
         date: date,
         time: time,
         recurrence: recurrence,
+        dates: savedExtraDates(date, meetingExtraDates),
         location: location,
         notes: notes,
         description: notes

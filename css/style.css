@@ -880,6 +880,54 @@ body::after {
 
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
+.date-picker-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.date-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.date-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 4px 7px;
+  border: 1px solid var(--border-accent);
+  border-radius: var(--radius-xs);
+  background: var(--accent-dim);
+  color: var(--text-written);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.date-chip-remove {
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.78rem;
+  line-height: 1;
+}
+
+.date-chip-remove:hover {
+  color: var(--danger);
+  background: rgba(255, 69, 58, 0.12);
+}
+
 .modal-actions {
   display: flex;
   justify-content: flex-end;
@@ -962,6 +1010,7 @@ body::after {
   .calendar-grid { gap: 1px; }
   .cal-day { padding: 6px 2px; font-size: 0.76rem; }
   .form-row { grid-template-columns: 1fr; }
+  .date-picker-row { grid-template-columns: 1fr; }
   .dashboard-grid { grid-template-columns: minmax(0, 1fr); }
   .card-timer, .card-calendar, .card-events, .card-meetings, .card-projects, .card-subscriptions { grid-column: 1; grid-row: auto; }
   .card-projects .item-card { flex-direction: row; gap: 12px; }
