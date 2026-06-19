@@ -38,7 +38,7 @@ data to MongoDB, replacing the original browser `localStorage` storage.
 - **Recent sessions** list with delete plus daily and weekly totals.
 - **Upcoming events** with title, date, time, location, and notes (add, edit, delete).
 - **Projects & meetings** with badges, status labels, overdue detection, and upcoming/past meeting views (add, edit, delete).
-- **Subscriptions** tracker with platform names, amounts, edit/delete actions, and a total cost.
+- **Subscriptions** tracker with platform names, amounts, active/past views, deleted dates, and a total cost.
 - **Monthly calendar** with markers on days that have items.
 - **Responsive dark UI** with neon-lime accents.
 - **MongoDB persistence** through a small Node API.

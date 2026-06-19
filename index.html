@@ -146,7 +146,14 @@
       <!-- Subscriptions Section -->
       <section class="card card-subscriptions" aria-label="Subscriptions">
         <div class="card-header">
-          <h2 class="card-heading">Subscriptions</h2>
+          <div class="event-heading-group">
+            <h2 class="card-heading" id="subscriptionsSectionTitle">Subscriptions</h2>
+            <label for="subscriptionView" class="sr-only">Subscription view</label>
+            <select id="subscriptionView" class="event-view-select subscription-view-select" aria-label="Choose subscription view">
+              <option value="active">Active</option>
+              <option value="past">Past</option>
+            </select>
+          </div>
           <button class="btn btn-primary btn-sm" id="btnAddSubscription" aria-label="Add subscription">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add
@@ -156,7 +163,7 @@
           <p class="empty-state">No subscriptions yet. Add one to start tracking monthly costs.</p>
         </div>
         <div class="subscription-total">
-          <span>Total</span>
+          <span>Active Total</span>
           <strong id="subscriptionsTotal">$0.00</strong>
         </div>
       </section>

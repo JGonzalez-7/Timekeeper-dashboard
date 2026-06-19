@@ -1109,6 +1109,7 @@
 
   // ===== Subscriptions =====
   var editingSubscriptionId = null;
+  var subscriptionView = 'active';
 
   function subscriptionAmount(item) {
     var amount = Number(item.amount);
@@ -1119,40 +1120,64 @@
     return item.platform || item.name || '';
   }
 
+  function subscriptionDeletedDate(item) {
+    return item.deletedDate || item.deletedAt || '';
+  }
+
+  function isSubscriptionDeleted(item) {
+    return Boolean(subscriptionDeletedDate(item));
+  }
+
   function renderSubscriptions() {
     var items = load(KEYS.subscriptions);
     var list = $('#subscriptionsList');
-    var total = items.reduce(function (sum, item) {
+    var title = $('#subscriptionsSectionTitle');
+    var viewSelect = $('#subscriptionView');
+    var activeItems = items.filter(function (item) { return !isSubscriptionDeleted(item); });
+    var filtered = items.filter(function (item) {
+      var isPast = isSubscriptionDeleted(item);
+      return subscriptionView === 'past' ? isPast : !isPast;
+    });
+    var total = activeItems.reduce(function (sum, item) {
       return sum + subscriptionAmount(item);
     }, 0);
 
+    title.textContent = subscriptionView === 'past' ? 'Past Subscriptions' : 'Subscriptions';
+    viewSelect.value = subscriptionView;
     $('#subscriptionsTotal').textContent = fmtCurrency(total);
 
-    if (!items.length) {
-      list.innerHTML = '<p class="empty-state">No subscriptions yet. Add one to start tracking monthly costs.</p>';
+    if (!filtered.length) {
+      list.innerHTML = '<p class="empty-state">' +
+        (subscriptionView === 'past' ? 'No past subscriptions yet.' : 'No subscriptions yet. Add one to start tracking monthly costs.') +
+      '</p>';
       return;
     }
 
-    var sorted = items.slice().sort(function (a, b) {
+    var sorted = filtered.slice().sort(function (a, b) {
+      if (subscriptionView === 'past' && subscriptionDeletedDate(a) !== subscriptionDeletedDate(b)) {
+        return subscriptionDeletedDate(a) < subscriptionDeletedDate(b) ? 1 : -1;
+      }
       return subscriptionPlatform(a).localeCompare(subscriptionPlatform(b));
     });
 
     list.innerHTML = sorted.map(function (item) {
       var platform = subscriptionPlatform(item);
       var amount = subscriptionAmount(item);
+      var deletedDate = subscriptionDeletedDate(item);
 
       return '<div class="item-card" data-id="' + item.id + '">' +
         '<div class="item-left">' +
           '<div class="item-title">' + escHtml(platform) + '</div>' +
+          (deletedDate ? itemDetail('Deleted', deletedDate) : '') +
         '</div>' +
         '<div class="item-actions">' +
           '<span class="subscription-amount">' + fmtCurrency(amount) + '</span>' +
-          '<button class="btn-delete btn-edit" data-edit-subscription="' + item.id + '" aria-label="Edit subscription" title="Edit">' +
+          (!deletedDate ? '<button class="btn-delete btn-edit" data-edit-subscription="' + item.id + '" aria-label="Edit subscription" title="Edit">' +
             '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
-          '</button>' +
-          '<button class="btn-delete" data-delete-subscription="' + item.id + '" aria-label="Delete subscription" title="Delete">' +
+          '</button>' : '') +
+          (!deletedDate ? '<button class="btn-delete" data-delete-subscription="' + item.id + '" aria-label="Delete subscription" title="Delete">' +
             '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>' +
-          '</button>' +
+          '</button>' : '') +
         '</div>' +
       '</div>';
     }).join('');
@@ -1185,6 +1210,10 @@
   }
 
   $('#btnAddSubscription').addEventListener('click', function () { openSubscriptionModal(); });
+  $('#subscriptionView').addEventListener('change', function (e) {
+    subscriptionView = e.target.value === 'past' ? 'past' : 'active';
+    renderSubscriptions();
+  });
   $('#subscriptionCancel').addEventListener('click', closeSubscriptionModal);
   $('#subscriptionModal').addEventListener('close', function () { editingSubscriptionId = null; });
 
@@ -1207,7 +1236,7 @@
         return item;
       });
     } else {
-      items.push({ id: uid(), platform: platform, amount: amount });
+      items.push({ id: uid(), platform: platform, amount: amount, createdDate: todayStr(), deletedDate: '' });
     }
 
     save(KEYS.subscriptions, items);
@@ -1222,8 +1251,11 @@
     if (editBtn) {
       openSubscriptionModal(editBtn.dataset.editSubscription);
     } else if (delBtn) {
-      var items = load(KEYS.subscriptions).filter(function (item) {
-        return item.id !== delBtn.dataset.deleteSubscription;
+      var items = load(KEYS.subscriptions).map(function (item) {
+        if (item.id === delBtn.dataset.deleteSubscription) {
+          return Object.assign({}, item, { deletedDate: todayStr() });
+        }
+        return item;
       });
       save(KEYS.subscriptions, items);
       renderSubscriptions();
