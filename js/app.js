@@ -3,10 +3,10 @@
   'use strict';
 
   // ===== Storage =====
-  var KEYS = { sessions: 'sessions', events: 'events', projects: 'projects', meetings: 'meetings' };
-  var LEGACY_KEYS = { sessions: 'tk_sessions', events: 'tk_events', projects: 'tk_projects', meetings: 'tk_meetings' };
+  var KEYS = { sessions: 'sessions', events: 'events', projects: 'projects', meetings: 'meetings', subscriptions: 'subscriptions' };
+  var LEGACY_KEYS = { sessions: 'tk_sessions', events: 'tk_events', projects: 'tk_projects', meetings: 'tk_meetings', subscriptions: 'tk_subscriptions' };
   var API_URL = apiUrl();
-  var store = { sessions: [], events: [], projects: [], meetings: [] };
+  var store = { sessions: [], events: [], projects: [], meetings: [], subscriptions: [] };
   var storageReady = false;
 
   function apiUrl() {
@@ -57,7 +57,8 @@
       sessions: legacyLoad(LEGACY_KEYS.sessions),
       events: legacyLoad(LEGACY_KEYS.events),
       projects: [],
-      meetings: []
+      meetings: [],
+      subscriptions: legacyLoad(LEGACY_KEYS.subscriptions)
     };
     var oldProjects = legacyLoad(LEGACY_KEYS.projects);
     var hasSplitMeetings = false;
@@ -167,6 +168,12 @@
     return h12 + ':' + pad(m) + ' ' + ampm;
   }
 
+  function fmtCurrency(value) {
+    var amount = Number(value);
+    if (!Number.isFinite(amount)) amount = 0;
+    return '$' + amount.toFixed(2);
+  }
+
   function dateStr(d) {
     return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
   }
@@ -265,6 +272,16 @@
 
     var compareTime = eventEndTime(event) || eventStartTime(event);
     var minutes = timeMinutes(compareTime);
+    if (minutes === null) return false;
+    return minutes < currentMinutes();
+  }
+
+  function isMeetingPast(meeting) {
+    var today = todayStr();
+    if (meeting.date < today) return true;
+    if (meeting.date > today) return false;
+
+    var minutes = timeMinutes(meeting.time);
     if (minutes === null) return false;
     return minutes < currentMinutes();
   }
@@ -402,7 +419,7 @@
     });
 
     meetings.forEach(function (m) {
-      if (m.date >= today) all.push({ title: m.title, date: m.date, time: m.time, type: 'meeting' });
+      if (!isMeetingPast(m)) all.push({ title: m.title, date: m.date, time: m.time, type: 'meeting' });
     });
 
     all.sort(function (a, b) {
@@ -940,27 +957,47 @@
 
   // ===== Meetings =====
   var editingMeetingId = null;
+  var meetingView = 'upcoming';
 
   function renderMeetings() {
     var items = load(KEYS.meetings);
     var list = $('#meetingsList');
+    var title = $('#meetingSectionTitle');
 
-    if (!items.length) {
-      list.innerHTML = '<p class="empty-state">No meetings yet. Add one to get started.</p>';
+    title.textContent = meetingView === 'past' ? 'Past Meetings' : 'Upcoming Meetings';
+    $$('[data-meeting-view]').forEach(function (tab) {
+      var isActive = tab.dataset.meetingView === meetingView;
+      tab.classList.toggle('is-active', isActive);
+      tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+
+    var filtered = items.filter(function (m) {
+      var isPast = isMeetingPast(m);
+      return meetingView === 'past' ? isPast : !isPast;
+    });
+
+    if (!filtered.length) {
+      list.innerHTML = '<p class="empty-state">' +
+        (meetingView === 'past' ? 'No past meetings yet.' : 'No upcoming meetings. Add one to get started.') +
+      '</p>';
       return;
     }
 
-    var sorted = items.slice().sort(function (a, b) {
+    var sorted = filtered.slice().sort(function (a, b) {
       if (a.date !== b.date) return a.date < b.date ? -1 : 1;
       return (a.time || '').localeCompare(b.time || '');
     });
+
+    if (meetingView === 'past') {
+      sorted.reverse();
+    }
 
     list.innerHTML = sorted.map(function (m) {
       var badges = [];
       var when = m.date + (m.time ? ' at ' + fmtTime12(m.time) : '');
       var notes = m.notes || m.description || '';
       badges.push('<span class="badge badge--meeting">Meeting</span>');
-      var isPast = m.date < todayStr();
+      var isPast = isMeetingPast(m);
       if (isPast) badges.push('<span class="badge badge--overdue">Past</span>');
       if (isToday(m.date)) badges.push('<span class="badge badge--today">Today</span>');
       else if (isTomorrow(m.date)) badges.push('<span class="badge badge--tomorrow">Tomorrow</span>');
@@ -1016,6 +1053,12 @@
   }
 
   $('#btnAddMeeting').addEventListener('click', function () { openMeetingModal(); });
+  $$('[data-meeting-view]').forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      meetingView = tab.dataset.meetingView === 'past' ? 'past' : 'upcoming';
+      renderMeetings();
+    });
+  });
   $('#meetingCancel').addEventListener('click', closeMeetingModal);
   $('#meetingModal').addEventListener('close', function () { editingMeetingId = null; });
 
@@ -1061,6 +1104,129 @@
       renderMeetings();
       renderCalendar();
       computeNextUp();
+    }
+  });
+
+  // ===== Subscriptions =====
+  var editingSubscriptionId = null;
+
+  function subscriptionAmount(item) {
+    var amount = Number(item.amount);
+    return Number.isFinite(amount) && amount >= 0 ? amount : 0;
+  }
+
+  function subscriptionPlatform(item) {
+    return item.platform || item.name || '';
+  }
+
+  function renderSubscriptions() {
+    var items = load(KEYS.subscriptions);
+    var list = $('#subscriptionsList');
+    var total = items.reduce(function (sum, item) {
+      return sum + subscriptionAmount(item);
+    }, 0);
+
+    $('#subscriptionsTotal').textContent = fmtCurrency(total);
+
+    if (!items.length) {
+      list.innerHTML = '<p class="empty-state">No subscriptions yet. Add one to start tracking monthly costs.</p>';
+      return;
+    }
+
+    var sorted = items.slice().sort(function (a, b) {
+      return subscriptionPlatform(a).localeCompare(subscriptionPlatform(b));
+    });
+
+    list.innerHTML = sorted.map(function (item) {
+      var platform = subscriptionPlatform(item);
+      var amount = subscriptionAmount(item);
+
+      return '<div class="item-card" data-id="' + item.id + '">' +
+        '<div class="item-left">' +
+          '<div class="item-title">' + escHtml(platform) + '</div>' +
+        '</div>' +
+        '<div class="item-actions">' +
+          '<span class="subscription-amount">' + fmtCurrency(amount) + '</span>' +
+          '<button class="btn-delete btn-edit" data-edit-subscription="' + item.id + '" aria-label="Edit subscription" title="Edit">' +
+            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
+          '</button>' +
+          '<button class="btn-delete" data-delete-subscription="' + item.id + '" aria-label="Delete subscription" title="Delete">' +
+            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>' +
+          '</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function openSubscriptionModal(id) {
+    editingSubscriptionId = id || null;
+    var modal = $('#subscriptionModal');
+    var form = $('#subscriptionForm');
+
+    if (id) {
+      var items = load(KEYS.subscriptions);
+      var item = items.find(function (sub) { return sub.id === id; });
+      if (!item) return;
+      $('#subscriptionModalTitle').textContent = 'Edit Subscription';
+      $('#subscriptionName').value = subscriptionPlatform(item);
+      $('#subscriptionAmount').value = subscriptionAmount(item).toFixed(2);
+    } else {
+      $('#subscriptionModalTitle').textContent = 'Add Subscription';
+      form.reset();
+    }
+
+    modal.showModal();
+    $('#subscriptionName').focus();
+  }
+
+  function closeSubscriptionModal() {
+    $('#subscriptionModal').close();
+    editingSubscriptionId = null;
+  }
+
+  $('#btnAddSubscription').addEventListener('click', function () { openSubscriptionModal(); });
+  $('#subscriptionCancel').addEventListener('click', closeSubscriptionModal);
+  $('#subscriptionModal').addEventListener('close', function () { editingSubscriptionId = null; });
+
+  $('#subscriptionForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var platform = $('#subscriptionName').value.trim();
+    var amount = Number($('#subscriptionAmount').value);
+
+    if (!platform || !Number.isFinite(amount) || amount < 0) return;
+
+    amount = Math.round(amount * 100) / 100;
+
+    var items = load(KEYS.subscriptions);
+
+    if (editingSubscriptionId) {
+      items = items.map(function (item) {
+        if (item.id === editingSubscriptionId) {
+          return Object.assign({}, item, { platform: platform, amount: amount });
+        }
+        return item;
+      });
+    } else {
+      items.push({ id: uid(), platform: platform, amount: amount });
+    }
+
+    save(KEYS.subscriptions, items);
+    closeSubscriptionModal();
+    renderSubscriptions();
+  });
+
+  $('#subscriptionsList').addEventListener('click', function (e) {
+    var editBtn = e.target.closest('[data-edit-subscription]');
+    var delBtn = e.target.closest('[data-delete-subscription]');
+
+    if (editBtn) {
+      openSubscriptionModal(editBtn.dataset.editSubscription);
+    } else if (delBtn) {
+      var items = load(KEYS.subscriptions).filter(function (item) {
+        return item.id !== delBtn.dataset.deleteSubscription;
+      });
+      save(KEYS.subscriptions, items);
+      renderSubscriptions();
     }
   });
 
@@ -1226,6 +1392,7 @@
     renderEvents();
     renderProjects();
     renderMeetings();
+    renderSubscriptions();
     renderCalendar();
     computeTotals();
     computeNextUp();

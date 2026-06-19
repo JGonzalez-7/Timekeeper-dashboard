@@ -13,7 +13,7 @@ const COLLECTION_NAME = process.env.MONGODB_COLLECTION || 'dashboard_data';
 const ALLOWED_ORIGINS = parseOrigins(process.env.ALLOWED_ORIGINS);
 const PUBLIC_DIR = __dirname;
 const STATIC_PREFIXES = ['/css/', '/js/'];
-const DATA_KEYS = ['sessions', 'events', 'projects', 'meetings'];
+const DATA_KEYS = ['sessions', 'events', 'projects', 'meetings', 'subscriptions'];
 const DATA_KEY_SET = new Set(DATA_KEYS);
 
 let collection;

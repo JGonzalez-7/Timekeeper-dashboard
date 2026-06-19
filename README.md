@@ -1,6 +1,6 @@
 # Timekeeper Dashboard
 
-> A dark, responsive productivity dashboard for tracking work time, events, projects, and meetings — backed by a lightweight Node API and MongoDB.
+> A dark, responsive productivity dashboard for tracking work time, events, projects, meetings, and subscriptions — backed by a lightweight Node API and MongoDB.
 
 ![Node.js](https://img.shields.io/badge/Node.js-server-339933?logo=node.js&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb&logoColor=white)
@@ -37,7 +37,8 @@ data to MongoDB, replacing the original browser `localStorage` storage.
 - **Work timer** with start, pause, resume, stop, reset, and task naming.
 - **Recent sessions** list with delete plus daily and weekly totals.
 - **Upcoming events** with title, date, time, location, and notes (add, edit, delete).
-- **Projects & meetings** with badges, status labels, overdue detection (add, edit, delete).
+- **Projects & meetings** with badges, status labels, overdue detection, and upcoming/past meeting views (add, edit, delete).
+- **Subscriptions** tracker with platform names, amounts, edit/delete actions, and a total cost.
 - **Monthly calendar** with markers on days that have items.
 - **Responsive dark UI** with neon-lime accents.
 - **MongoDB persistence** through a small Node API.
@@ -118,8 +119,8 @@ following JSON endpoints:
 | Method | Endpoint | Description |
 | --- | --- | --- |
 | `GET` | `/api/health` | Health check. Returns `{ "ok": true }`. |
-| `GET` | `/api/data` | Returns all data: `{ sessions, events, projects, meetings }`. |
-| `PUT` | `/api/data/:key` | Replaces one list. `:key` ∈ `sessions \| events \| projects \| meetings`. Body must be a JSON **array**. |
+| `GET` | `/api/data` | Returns all data: `{ sessions, events, projects, meetings, subscriptions }`. |
+| `PUT` | `/api/data/:key` | Replaces one list. `:key` ∈ `sessions \| events \| projects \| meetings \| subscriptions`. Body must be a JSON **array**. |
 
 A `PUT` with a non-array body returns `400`, and an unknown `:key` returns `404`.
 
@@ -204,12 +205,13 @@ Render into MongoDB.
 
 ## Data Storage
 
-The API stores four documents in MongoDB, one per app area:
+The API stores five documents in MongoDB, one per app area:
 
 - `sessions`
 - `events`
 - `projects`
 - `meetings`
+- `subscriptions`
 
 The database and collection are created automatically the first time the server
 saves data. On first run, existing `localStorage` data is copied into MongoDB

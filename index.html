@@ -111,8 +111,14 @@
 
       <!-- Meetings Section -->
       <section class="card card-meetings" aria-label="Meetings">
-        <div class="card-header">
-          <h2 class="card-heading">Meetings</h2>
+        <div class="card-header event-card-header">
+          <div class="event-heading-group">
+            <h2 class="card-heading" id="meetingSectionTitle">Upcoming Meetings</h2>
+            <div class="view-tabs" role="tablist" aria-label="Meeting view">
+              <button type="button" class="view-tab is-active" data-meeting-view="upcoming" role="tab" aria-selected="true">Upcoming</button>
+              <button type="button" class="view-tab" data-meeting-view="past" role="tab" aria-selected="false">Past</button>
+            </div>
+          </div>
           <button class="btn btn-primary btn-sm" id="btnAddMeeting" aria-label="Add meeting">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add
@@ -134,6 +140,24 @@
         </div>
         <div id="projectsList" class="items-list">
           <p class="empty-state">No projects yet. Add one to get started.</p>
+        </div>
+      </section>
+
+      <!-- Subscriptions Section -->
+      <section class="card card-subscriptions" aria-label="Subscriptions">
+        <div class="card-header">
+          <h2 class="card-heading">Subscriptions</h2>
+          <button class="btn btn-primary btn-sm" id="btnAddSubscription" aria-label="Add subscription">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add
+          </button>
+        </div>
+        <div id="subscriptionsList" class="items-list subscriptions-list">
+          <p class="empty-state">No subscriptions yet. Add one to start tracking monthly costs.</p>
+        </div>
+        <div class="subscription-total">
+          <span>Total</span>
+          <strong id="subscriptionsTotal">$0.00</strong>
         </div>
       </section>
     </div>
@@ -248,6 +272,25 @@
       </div>
       <div class="modal-actions">
         <button type="button" class="btn btn-ghost" id="meetingCancel">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Subscription Modal -->
+  <dialog class="modal" id="subscriptionModal">
+    <form class="modal-form" id="subscriptionForm" method="dialog">
+      <h2 class="modal-title" id="subscriptionModalTitle">Add Subscription</h2>
+      <div class="form-group">
+        <label for="subscriptionName">Platform <span class="required">*</span></label>
+        <input type="text" id="subscriptionName" required maxlength="120" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label for="subscriptionAmount">Amount <span class="required">*</span></label>
+        <input type="number" id="subscriptionAmount" required min="0" step="0.01" inputmode="decimal">
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="subscriptionCancel">Cancel</button>
         <button type="submit" class="btn btn-primary">Save</button>
       </div>
     </form>
