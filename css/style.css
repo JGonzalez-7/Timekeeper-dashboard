@@ -10,9 +10,9 @@
   --text-written: #ffffff;
   --text-secondary: #8a8a96;
   --text-tertiary: #52525e;
-  --accent: #c8ff2e;
-  --accent-hover: #d6ff57;
-  --accent-dim: rgba(200, 255, 46, 0.10);
+  --accent: #a6d65a;
+  --accent-hover: #b7e174;
+  --accent-dim: rgba(166, 214, 90, 0.10);
   --danger: #ff453a;
   --danger-hover: #ff6259;
   --success: #30d158;
@@ -21,7 +21,7 @@
   --meeting: #d45ec7;
   --subscription: #5ac8fa;
   --border: rgba(255, 255, 255, 0.08);
-  --border-accent: rgba(200, 255, 46, 0.25);
+  --border-accent: rgba(166, 214, 90, 0.22);
   --shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
   --radius: 12px;
@@ -57,7 +57,7 @@ body::after {
   transform: translateX(-50%);
   width: 800px;
   height: 600px;
-  background: radial-gradient(ellipse, rgba(200, 255, 46, 0.04) 0%, transparent 70%);
+  background: radial-gradient(ellipse, rgba(166, 214, 90, 0.035) 0%, transparent 70%);
   pointer-events: none;
   z-index: 0;
 }
@@ -102,7 +102,7 @@ body::after {
   width: 22px;
   height: 22px;
   color: var(--accent);
-  filter: drop-shadow(0 0 8px rgba(200, 255, 46, 0.5));
+  filter: drop-shadow(0 0 8px rgba(166, 214, 90, 0.35));
 }
 
 .app-title {
@@ -166,7 +166,7 @@ body::after {
 
 .card-value--small { font-size: 0.84rem; font-weight: 500; line-height: 1.3; color: var(--text-secondary); }
 
-.card-value--accent { color: var(--accent); text-shadow: 0 0 20px rgba(200, 255, 46, 0.2); }
+.card-value--accent { color: var(--accent); text-shadow: 0 0 20px rgba(166, 214, 90, 0.14); }
 
 #nextUp {
   display: -webkit-box;
@@ -189,7 +189,7 @@ body::after {
 
 .card-overview:hover {
   border-color: var(--border-accent);
-  box-shadow: 0 0 24px rgba(200, 255, 46, 0.08);
+  box-shadow: 0 0 24px rgba(166, 214, 90, 0.06);
 }
 
 /* ===== Dashboard Grid ===== */
@@ -268,7 +268,7 @@ body::after {
 
 .event-view-select:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(200, 255, 46, 0.1);
+  box-shadow: 0 0 0 3px rgba(166, 214, 90, 0.1);
 }
 
 .view-tabs {
@@ -302,7 +302,7 @@ body::after {
 
 .view-tab:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(200, 255, 46, 0.1);
+  box-shadow: 0 0 0 3px rgba(166, 214, 90, 0.1);
 }
 
 .view-tab.is-active {
@@ -317,7 +317,7 @@ body::after {
   font-variant-numeric: tabular-nums;
   letter-spacing: 0;
   color: var(--accent);
-  text-shadow: 0 0 24px rgba(200, 255, 46, 0.3);
+  text-shadow: 0 0 24px rgba(166, 214, 90, 0.2);
 }
 
 .timer-input-row { margin-bottom: 10px; }
@@ -337,7 +337,7 @@ body::after {
 
 .timer-input:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(200, 255, 46, 0.1);
+  box-shadow: 0 0 0 3px rgba(166, 214, 90, 0.1);
 }
 
 .timer-input::placeholder { color: var(--text-tertiary); }
@@ -382,11 +382,11 @@ body::after {
   background: var(--accent);
   color: #08080c;
   border-color: var(--accent);
-  box-shadow: 0 0 14px rgba(200, 255, 46, 0.2);
+  box-shadow: 0 0 14px rgba(166, 214, 90, 0.16);
 }
 .btn-primary:hover {
   background: var(--accent-hover);
-  box-shadow: 0 0 22px rgba(200, 255, 46, 0.35);
+  box-shadow: 0 0 22px rgba(166, 214, 90, 0.24);
 }
 
 .btn-secondary {
@@ -544,7 +544,7 @@ body::after {
   background: var(--accent);
   color: #08080c;
   font-weight: 700;
-  box-shadow: 0 0 18px rgba(200, 255, 46, 0.28);
+  box-shadow: 0 0 18px rgba(166, 214, 90, 0.2);
 }
 
 .cal-day--today:hover { background: var(--accent-hover); }
@@ -559,7 +559,7 @@ body::after {
   height: 6px;
   border-radius: 50%;
   background: var(--accent);
-  box-shadow: 0 0 6px rgba(200, 255, 46, 0.5);
+  box-shadow: 0 0 6px rgba(166, 214, 90, 0.35);
 }
 
 .cal-day--today.cal-day--marked::after { background: #08080c; box-shadow: none; }
@@ -571,7 +571,7 @@ body::after {
   border: 1px solid var(--border-accent);
 }
 
-.cal-day--selected:hover { background: rgba(200, 255, 46, 0.16); }
+.cal-day--selected:hover { background: rgba(166, 214, 90, 0.14); }
 
 .cal-day--today.cal-day--selected { background: var(--accent); color: #08080c; border-color: transparent; }
 
@@ -612,7 +612,7 @@ body::after {
   flex-shrink: 0;
 }
 
-.cal-item-dot--event { background: var(--accent); box-shadow: 0 0 6px rgba(200, 255, 46, 0.5); }
+.cal-item-dot--event { background: var(--accent); box-shadow: 0 0 6px rgba(166, 214, 90, 0.35); }
 .cal-item-dot--project { background: var(--project); box-shadow: 0 0 6px rgba(124, 110, 240, 0.4); }
 .cal-item-dot--meeting { background: var(--meeting); box-shadow: 0 0 6px rgba(212, 94, 199, 0.4); }
 
@@ -847,7 +847,7 @@ body::after {
 .form-group select:focus,
 .form-group textarea:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(200, 255, 46, 0.1);
+  box-shadow: 0 0 0 3px rgba(166, 214, 90, 0.1);
 }
 
 .form-group input[type="date"],
@@ -860,11 +860,11 @@ body::after {
 }
 
 .form-group input[type="date"] {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23c8ff2e' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 2v4'/%3E%3Cpath d='M16 2v4'/%3E%3Crect x='3' y='4' width='18' height='18' rx='2'/%3E%3Cpath d='M3 10h18'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23a6d65a' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 2v4'/%3E%3Cpath d='M16 2v4'/%3E%3Crect x='3' y='4' width='18' height='18' rx='2'/%3E%3Cpath d='M3 10h18'/%3E%3C/svg%3E");
 }
 
 .form-group input[type="time"] {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23c8ff2e' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23a6d65a' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E");
 }
 
 .form-group input[type="date"]::-webkit-calendar-picker-indicator,
