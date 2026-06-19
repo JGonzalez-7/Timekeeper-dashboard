@@ -86,6 +86,7 @@
           title: item.title,
           startDate: item.date || item.startDate || '',
           endDate: item.endDate || '',
+          completedDate: item.completedDate || '',
           description: item.description || item.desc || ''
         });
       }
@@ -393,8 +394,11 @@
     });
 
     projects.forEach(function (p) {
-      if (p.startDate && p.startDate >= today && !p.endDate)
+      if (p.completedDate) return;
+      if (p.startDate && p.startDate >= today)
         all.push({ title: p.title, date: p.startDate, time: '', type: 'project' });
+      if (p.endDate && p.endDate >= today)
+        all.push({ title: 'Deadline: ' + p.title, date: p.endDate, time: '', type: 'project' });
     });
 
     meetings.forEach(function (m) {
@@ -771,13 +775,29 @@
   var editingProjectId = null;
 
   function getProjectStatus(p) {
-    if (p.endDate) return 'completed';
+    if (p.completedDate) return 'completed';
     return 'in-progress';
   }
 
   function isProjectOverdue(p) {
-    if (p.endDate) return false;
-    return p.startDate < todayStr();
+    if (!p.endDate || p.completedDate) return false;
+    return p.endDate < todayStr();
+  }
+
+  function projectDateLine(p) {
+    var parts = [];
+    if (p.startDate) parts.push('Start: ' + escHtml(p.startDate));
+    if (p.endDate) parts.push('Deadline: ' + escHtml(p.endDate));
+    if (p.completedDate) parts.push('Completed: ' + escHtml(p.completedDate));
+    return parts.join(' &middot; ');
+  }
+
+  function projectCalendarMeta(p, selectedDate) {
+    var parts = [];
+    if (p.startDate === selectedDate) parts.push('Start: ' + escHtml(p.startDate));
+    if (p.endDate === selectedDate) parts.push('Deadline: ' + escHtml(p.endDate));
+    if (p.completedDate === selectedDate) parts.push('Completed: ' + escHtml(p.completedDate));
+    return parts.join(' &middot; ') || projectDateLine(p);
   }
 
   function renderProjects() {
@@ -800,11 +820,12 @@
       badges.push('<span class="badge badge--project">Project</span>');
       badges.push('<span class="badge badge--' + status + '">' + (status === 'in-progress' ? 'In Progress' : 'Completed') + '</span>');
       if (isProjectOverdue(p)) badges.push('<span class="badge badge--overdue">Overdue</span>');
-      if (isToday(p.startDate)) badges.push('<span class="badge badge--today">Today</span>');
-      else if (isTomorrow(p.startDate)) badges.push('<span class="badge badge--tomorrow">Tomorrow</span>');
+      if (!p.completedDate && isToday(p.endDate)) badges.push('<span class="badge badge--today">Due Today</span>');
+      else if (!p.completedDate && isTomorrow(p.endDate)) badges.push('<span class="badge badge--tomorrow">Due Tomorrow</span>');
+      else if (isToday(p.startDate)) badges.push('<span class="badge badge--today">Starts Today</span>');
+      else if (isTomorrow(p.startDate)) badges.push('<span class="badge badge--tomorrow">Starts Tomorrow</span>');
 
-      var dateLine = p.startDate;
-      if (p.endDate) dateLine += ' &middot; End: ' + p.endDate;
+      var dateLine = projectDateLine(p);
 
       return '<div class="item-card" data-id="' + p.id + '">' +
         '<div class="item-left">' +
@@ -838,6 +859,7 @@
       $('#projectTitle').value = p.title;
       $('#projectStartDate').value = p.startDate || '';
       $('#projectEndDate').value = p.endDate || '';
+      $('#projectCompletedDate').value = p.completedDate || '';
       $('#projectDesc').value = p.description || '';
     } else {
       $('#projectModalTitle').textContent = 'Add Project';
@@ -863,6 +885,7 @@
     var title = $('#projectTitle').value.trim();
     var startDate = $('#projectStartDate').value;
     var endDate = $('#projectEndDate').value;
+    var completedDate = $('#projectCompletedDate').value;
     var description = $('#projectDesc').value.trim();
 
     if (!title || !startDate) return;
@@ -872,12 +895,25 @@
     if (editingProjectId) {
       items = items.map(function (p) {
         if (p.id === editingProjectId) {
-          return Object.assign({}, p, { title: title, startDate: startDate, endDate: endDate, description: description });
+          return Object.assign({}, p, {
+            title: title,
+            startDate: startDate,
+            endDate: endDate,
+            completedDate: completedDate,
+            description: description
+          });
         }
         return p;
       });
     } else {
-      items.push({ id: uid(), title: title, startDate: startDate, endDate: endDate, description: description });
+      items.push({
+        id: uid(),
+        title: title,
+        startDate: startDate,
+        endDate: endDate,
+        completedDate: completedDate,
+        description: description
+      });
     }
 
     save(KEYS.projects, items);
@@ -1053,7 +1089,11 @@
     // Compute marked dates from all sources
     var marked = {};
     eventOccurrencesBetween(load(KEYS.events), monthStart, monthEnd).forEach(function (e) { marked[e.date] = (marked[e.date] || 0) + 1; });
-    load(KEYS.projects).forEach(function (p) { marked[p.startDate] = (marked[p.startDate] || 0) + 1; if (p.endDate) marked[p.endDate] = (marked[p.endDate] || 0) + 1; });
+    load(KEYS.projects).forEach(function (p) {
+      if (p.startDate) marked[p.startDate] = (marked[p.startDate] || 0) + 1;
+      if (p.endDate) marked[p.endDate] = (marked[p.endDate] || 0) + 1;
+      if (p.completedDate) marked[p.completedDate] = (marked[p.completedDate] || 0) + 1;
+    });
     load(KEYS.meetings).forEach(function (m) { marked[m.date] = (marked[m.date] || 0) + 1; });
 
     var html = DAY_NAMES.map(function (d) { return '<div class="cal-head">' + d + '</div>'; }).join('');
@@ -1096,7 +1136,9 @@
 
     var dateFilter = calSelectedDate;
     var evItems = eventOccurrencesBetween(load(KEYS.events), dateFilter, dateFilter);
-    var projItems = load(KEYS.projects).filter(function (p) { return p.startDate === dateFilter || (p.endDate && p.endDate === dateFilter); });
+    var projItems = load(KEYS.projects).filter(function (p) {
+      return p.startDate === dateFilter || p.endDate === dateFilter || p.completedDate === dateFilter;
+    });
     var meetItems = load(KEYS.meetings).filter(function (m) { return m.date === dateFilter; });
     var totalItems = evItems.length + projItems.length + meetItems.length;
 
@@ -1133,7 +1175,7 @@
         '<span class="cal-item-dot cal-item-dot--project"></span>' +
         '<div class="cal-item-info">' +
           '<div class="cal-item-title">' + escHtml(p.title) + '</div>' +
-          '<div class="cal-item-time">Start: ' + p.startDate + (p.endDate ? ' &middot; End: ' + p.endDate : '') + '</div>' +
+          '<div class="cal-item-time">' + projectCalendarMeta(p, dateFilter) + '</div>' +
         '</div>' +
       '</div>';
     });
