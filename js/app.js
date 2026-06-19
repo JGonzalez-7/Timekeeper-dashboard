@@ -215,8 +215,14 @@
 
   var DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   var MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  const RECURRENCE_VALUES = ['none', 'weekly', 'monthly', 'yearly'];
-  const RECURRENCE_LABELS = { weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly' };
+  const RECURRENCE_VALUES = ['none', 'daily', 'weekly', 'biweekly', 'monthly', 'yearly'];
+  const RECURRENCE_LABELS = {
+    daily: 'Daily',
+    weekly: 'Weekly',
+    biweekly: 'Every 2 weeks',
+    monthly: 'Monthly',
+    yearly: 'Yearly'
+  };
 
   function normalizeRecurrence(value) {
     return RECURRENCE_VALUES.indexOf(value) === -1 ? 'none' : value;
@@ -306,8 +312,16 @@
   }
 
   function recurrenceDate(baseDate, recurrence, index) {
+    if (recurrence === 'daily') {
+      return addDays(baseDate, index);
+    }
+
     if (recurrence === 'weekly') {
       return addDays(baseDate, index * 7);
+    }
+
+    if (recurrence === 'biweekly') {
+      return addDays(baseDate, index * 14);
     }
 
     if (recurrence === 'monthly') {
@@ -355,6 +369,45 @@
         var occurrenceDate = dateStr(occurrence);
         if (occurrenceDate > endDate) break;
         if (occurrenceDate >= startDate) occurrences.push(eventOccurrence(event, occurrenceDate));
+        index += 1;
+        guard += 1;
+      }
+    });
+
+    return occurrences;
+  }
+
+  function meetingOccurrence(meeting, occurrenceDate) {
+    return Object.assign({}, meeting, {
+      date: occurrenceDate,
+      occurrenceId: meeting.id + ':' + occurrenceDate,
+      recurrence: normalizeRecurrence(meeting.recurrence),
+      sourceDate: meeting.date
+    });
+  }
+
+  function meetingOccurrencesBetween(meetings, startDate, endDate) {
+    var occurrences = [];
+
+    meetings.forEach(function (meeting) {
+      var baseDate = parseDateValue(meeting.date);
+      if (!baseDate) return;
+
+      var recurrence = normalizeRecurrence(meeting.recurrence);
+      if (recurrence === 'none') {
+        if (meeting.date >= startDate && meeting.date <= endDate) {
+          occurrences.push(meetingOccurrence(meeting, meeting.date));
+        }
+        return;
+      }
+
+      var index = 0;
+      var guard = 0;
+      while (guard < 5000) {
+        var occurrence = recurrenceDate(baseDate, recurrence, index);
+        var occurrenceDate = dateStr(occurrence);
+        if (occurrenceDate > endDate) break;
+        if (occurrenceDate >= startDate) occurrences.push(meetingOccurrence(meeting, occurrenceDate));
         index += 1;
         guard += 1;
       }
@@ -418,7 +471,7 @@
         all.push({ title: 'Deadline: ' + p.title, date: p.endDate, time: '', type: 'project' });
     });
 
-    meetings.forEach(function (m) {
+    meetingOccurrencesBetween(meetings, today, dateStr(addDays(new Date(), 370))).forEach(function (m) {
       if (!isMeetingPast(m)) all.push({ title: m.title, date: m.date, time: m.time, type: 'meeting' });
     });
 
@@ -613,24 +666,23 @@
   function renderEvents() {
     var events = load(KEYS.events);
     var list = $('#eventsList');
-    var title = $('#eventSectionTitle');
-    var viewSelect = $('#eventView');
     var today = todayStr();
     var startDate = today;
     var endDate = dateStr(addDays(new Date(), 370));
 
     if (eventView === 'past') {
-      title.textContent = 'Past Events';
       endDate = today;
       startDate = events.reduce(function (earliest, event) {
         if (!event.date) return earliest;
         return !earliest || event.date < earliest ? event.date : earliest;
       }, today);
-    } else {
-      title.textContent = 'Upcoming Events';
     }
 
-    viewSelect.value = eventView;
+    $$('[data-event-view]').forEach(function (tab) {
+      var isActive = tab.dataset.eventView === eventView;
+      tab.classList.toggle('is-active', isActive);
+      tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
 
     var sorted = eventOccurrencesBetween(events, startDate, endDate).filter(function (event) {
       var isPast = isEventOccurrencePast(event);
@@ -716,9 +768,11 @@
   }
 
   $('#btnAddEvent').addEventListener('click', function () { openEventModal(); });
-  $('#eventView').addEventListener('change', function (e) {
-    eventView = e.target.value === 'past' ? 'past' : 'upcoming';
-    renderEvents();
+  $$('[data-event-view]').forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      eventView = tab.dataset.eventView === 'past' ? 'past' : 'upcoming';
+      renderEvents();
+    });
   });
   $('#eventCancel').addEventListener('click', closeEventModal);
   $('#eventModal').addEventListener('close', function () { editingEventId = null; });
@@ -962,16 +1016,25 @@
   function renderMeetings() {
     var items = load(KEYS.meetings);
     var list = $('#meetingsList');
-    var title = $('#meetingSectionTitle');
+    var today = todayStr();
+    var startDate = today;
+    var endDate = dateStr(addDays(new Date(), 370));
 
-    title.textContent = meetingView === 'past' ? 'Past Meetings' : 'Upcoming Meetings';
     $$('[data-meeting-view]').forEach(function (tab) {
       var isActive = tab.dataset.meetingView === meetingView;
       tab.classList.toggle('is-active', isActive);
       tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
     });
 
-    var filtered = items.filter(function (m) {
+    if (meetingView === 'past') {
+      endDate = today;
+      startDate = items.reduce(function (earliest, meeting) {
+        if (!meeting.date) return earliest;
+        return !earliest || meeting.date < earliest ? meeting.date : earliest;
+      }, today);
+    }
+
+    var filtered = meetingOccurrencesBetween(items, startDate, endDate).filter(function (m) {
       var isPast = isMeetingPast(m);
       return meetingView === 'past' ? isPast : !isPast;
     });
@@ -996,13 +1059,15 @@
       var badges = [];
       var when = m.date + (m.time ? ' at ' + fmtTime12(m.time) : '');
       var notes = m.notes || m.description || '';
+      var repeat = recurrenceLabel(m.recurrence);
       badges.push('<span class="badge badge--meeting">Meeting</span>');
+      if (repeat) badges.push('<span class="badge badge--recurring">' + repeat + '</span>');
       var isPast = isMeetingPast(m);
       if (isPast) badges.push('<span class="badge badge--overdue">Past</span>');
       if (isToday(m.date)) badges.push('<span class="badge badge--today">Today</span>');
       else if (isTomorrow(m.date)) badges.push('<span class="badge badge--tomorrow">Tomorrow</span>');
 
-      return '<div class="item-card" data-id="' + m.id + '">' +
+      return '<div class="item-card" data-id="' + m.occurrenceId + '">' +
         '<div class="item-left">' +
           '<div class="item-title">' + escHtml(m.title) + '</div>' +
           itemDetail('When', when) +
@@ -1035,12 +1100,14 @@
       $('#meetingTitle').value = m.title;
       $('#meetingDate').value = m.date;
       $('#meetingTime').value = m.time || '';
+      $('#meetingRecurrence').value = normalizeRecurrence(m.recurrence);
       $('#meetingLocation').value = m.location || '';
       $('#meetingDesc').value = m.notes || m.description || '';
     } else {
       $('#meetingModalTitle').textContent = 'Add Meeting';
       form.reset();
       $('#meetingDate').value = todayStr();
+      $('#meetingRecurrence').value = 'none';
     }
 
     modal.showModal();
@@ -1067,6 +1134,7 @@
     var title = $('#meetingTitle').value.trim();
     var date = $('#meetingDate').value;
     var time = $('#meetingTime').value;
+    var recurrence = normalizeRecurrence($('#meetingRecurrence').value);
     var location = $('#meetingLocation').value.trim();
     var notes = $('#meetingDesc').value.trim();
 
@@ -1077,12 +1145,29 @@
     if (editingMeetingId) {
       items = items.map(function (m) {
         if (m.id === editingMeetingId) {
-          return Object.assign({}, m, { title: title, date: date, time: time, location: location, notes: notes, description: notes });
+          return Object.assign({}, m, {
+            title: title,
+            date: date,
+            time: time,
+            recurrence: recurrence,
+            location: location,
+            notes: notes,
+            description: notes
+          });
         }
         return m;
       });
     } else {
-      items.push({ id: uid(), title: title, date: date, time: time, location: location, notes: notes, description: notes });
+      items.push({
+        id: uid(),
+        title: title,
+        date: date,
+        time: time,
+        recurrence: recurrence,
+        location: location,
+        notes: notes,
+        description: notes
+      });
     }
 
     save(KEYS.meetings, items);
@@ -1131,8 +1216,6 @@
   function renderSubscriptions() {
     var items = load(KEYS.subscriptions);
     var list = $('#subscriptionsList');
-    var title = $('#subscriptionsSectionTitle');
-    var viewSelect = $('#subscriptionView');
     var activeItems = items.filter(function (item) { return !isSubscriptionDeleted(item); });
     var filtered = items.filter(function (item) {
       var isPast = isSubscriptionDeleted(item);
@@ -1142,8 +1225,11 @@
       return sum + subscriptionAmount(item);
     }, 0);
 
-    title.textContent = subscriptionView === 'past' ? 'Past Subscriptions' : 'Subscriptions';
-    viewSelect.value = subscriptionView;
+    $$('[data-subscription-view]').forEach(function (tab) {
+      var isActive = tab.dataset.subscriptionView === subscriptionView;
+      tab.classList.toggle('is-active', isActive);
+      tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
     $('#subscriptionsTotal').textContent = fmtCurrency(total);
 
     if (!filtered.length) {
@@ -1210,9 +1296,11 @@
   }
 
   $('#btnAddSubscription').addEventListener('click', function () { openSubscriptionModal(); });
-  $('#subscriptionView').addEventListener('change', function (e) {
-    subscriptionView = e.target.value === 'past' ? 'past' : 'active';
-    renderSubscriptions();
+  $$('[data-subscription-view]').forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      subscriptionView = tab.dataset.subscriptionView === 'past' ? 'past' : 'active';
+      renderSubscriptions();
+    });
   });
   $('#subscriptionCancel').addEventListener('click', closeSubscriptionModal);
   $('#subscriptionModal').addEventListener('close', function () { editingSubscriptionId = null; });
@@ -1292,7 +1380,7 @@
       if (p.endDate) marked[p.endDate] = (marked[p.endDate] || 0) + 1;
       if (p.completedDate) marked[p.completedDate] = (marked[p.completedDate] || 0) + 1;
     });
-    load(KEYS.meetings).forEach(function (m) { marked[m.date] = (marked[m.date] || 0) + 1; });
+    meetingOccurrencesBetween(load(KEYS.meetings), monthStart, monthEnd).forEach(function (m) { marked[m.date] = (marked[m.date] || 0) + 1; });
 
     var html = DAY_NAMES.map(function (d) { return '<div class="cal-head">' + d + '</div>'; }).join('');
 
@@ -1337,7 +1425,7 @@
     var projItems = load(KEYS.projects).filter(function (p) {
       return p.startDate === dateFilter || p.endDate === dateFilter || p.completedDate === dateFilter;
     });
-    var meetItems = load(KEYS.meetings).filter(function (m) { return m.date === dateFilter; });
+    var meetItems = meetingOccurrencesBetween(load(KEYS.meetings), dateFilter, dateFilter);
     var totalItems = evItems.length + projItems.length + meetItems.length;
 
     if (!evItems.length && !projItems.length && !meetItems.length) {
@@ -1381,8 +1469,10 @@
     meetItems.forEach(function (m) {
       var meetingMeta = '';
       var notes = m.notes || m.description || '';
+      var repeat = recurrenceLabel(m.recurrence);
       if (m.time) meetingMeta = fmtTime12(m.time);
       if (m.location) meetingMeta += (meetingMeta ? ' &middot; ' : '') + '<span class="item-written">' + escHtml(m.location) + '</span>';
+      if (repeat) meetingMeta += (meetingMeta ? ' &middot; ' : '') + repeat;
 
       html += '<div class="cal-item">' +
         '<span class="cal-item-dot cal-item-dot--meeting"></span>' +

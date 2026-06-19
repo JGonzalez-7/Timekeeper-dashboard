@@ -92,12 +92,11 @@
       <section class="card card-events" aria-label="Events">
         <div class="card-header event-card-header">
           <div class="event-heading-group">
-            <h2 class="card-heading" id="eventSectionTitle">Upcoming Events</h2>
-            <label for="eventView" class="sr-only">Event view</label>
-            <select id="eventView" class="event-view-select" aria-label="Choose event view">
-              <option value="upcoming">Upcoming</option>
-              <option value="past">Past</option>
-            </select>
+            <h2 class="card-heading">Events</h2>
+            <div class="view-tabs" role="tablist" aria-label="Event view">
+              <button type="button" class="view-tab is-active" data-event-view="upcoming" role="tab" aria-selected="true">Upcoming</button>
+              <button type="button" class="view-tab" data-event-view="past" role="tab" aria-selected="false">Past</button>
+            </div>
           </div>
           <button class="btn btn-primary btn-sm" id="btnAddEvent" aria-label="Add event">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -113,7 +112,7 @@
       <section class="card card-meetings" aria-label="Meetings">
         <div class="card-header event-card-header">
           <div class="event-heading-group">
-            <h2 class="card-heading" id="meetingSectionTitle">Upcoming Meetings</h2>
+            <h2 class="card-heading">Meetings</h2>
             <div class="view-tabs" role="tablist" aria-label="Meeting view">
               <button type="button" class="view-tab is-active" data-meeting-view="upcoming" role="tab" aria-selected="true">Upcoming</button>
               <button type="button" class="view-tab" data-meeting-view="past" role="tab" aria-selected="false">Past</button>
@@ -147,12 +146,11 @@
       <section class="card card-subscriptions" aria-label="Subscriptions">
         <div class="card-header">
           <div class="event-heading-group">
-            <h2 class="card-heading" id="subscriptionsSectionTitle">Subscriptions</h2>
-            <label for="subscriptionView" class="sr-only">Subscription view</label>
-            <select id="subscriptionView" class="event-view-select subscription-view-select" aria-label="Choose subscription view">
-              <option value="active">Active</option>
-              <option value="past">Past</option>
-            </select>
+            <h2 class="card-heading">Subscriptions</h2>
+            <div class="view-tabs" role="tablist" aria-label="Subscription view">
+              <button type="button" class="view-tab is-active" data-subscription-view="active" role="tab" aria-selected="true">Active</button>
+              <button type="button" class="view-tab" data-subscription-view="past" role="tab" aria-selected="false">Past</button>
+            </div>
           </div>
           <button class="btn btn-primary btn-sm" id="btnAddSubscription" aria-label="Add subscription">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -187,7 +185,9 @@
           <label for="eventRecurrence">Repeat</label>
           <select id="eventRecurrence">
             <option value="none">Does not repeat</option>
+            <option value="daily">Daily</option>
             <option value="weekly">Weekly</option>
+            <option value="biweekly">Every 2 weeks</option>
             <option value="monthly">Monthly</option>
             <option value="yearly">Yearly</option>
           </select>
@@ -268,6 +268,17 @@
           <label for="meetingTime">Start Time</label>
           <input type="time" id="meetingTime">
         </div>
+      </div>
+      <div class="form-group">
+        <label for="meetingRecurrence">Repeat</label>
+        <select id="meetingRecurrence">
+          <option value="none">Does not repeat</option>
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="biweekly">Every 2 weeks</option>
+          <option value="monthly">Monthly</option>
+          <option value="yearly">Yearly</option>
+        </select>
       </div>
       <div class="form-group">
         <label for="meetingLocation">Location</label>
